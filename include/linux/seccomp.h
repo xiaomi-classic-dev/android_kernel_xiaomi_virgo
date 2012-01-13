@@ -7,7 +7,9 @@
 #include <linux/thread_info.h>
 #include <asm/seccomp.h>
 
-typedef struct { int mode; } seccomp_t;
+struct seccomp {
+	int mode;
+};
 
 extern void __secure_computing(int);
 static inline void secure_computing(int this_syscall)
@@ -25,7 +27,7 @@ static inline void secure_computing_strict(int this_syscall)
 extern long prctl_get_seccomp(void);
 extern long prctl_set_seccomp(unsigned long);
 
-static inline int seccomp_mode(seccomp_t *s)
+static inline int seccomp_mode(struct seccomp *s)
 {
 	return s->mode;
 }
@@ -34,7 +36,7 @@ static inline int seccomp_mode(seccomp_t *s)
 
 #include <linux/errno.h>
 
-typedef struct { } seccomp_t;
+struct seccomp { };
 
 static inline int secure_computing(int this_syscall) { return 0; }
 static inline void secure_computing_strict(int this_syscall) { return; }
@@ -49,7 +51,7 @@ static inline long prctl_set_seccomp(unsigned long arg2)
 	return -EINVAL;
 }
 
-static inline int seccomp_mode(seccomp_t *s)
+static inline int seccomp_mode(struct seccomp *s)
 {
 	return 0;
 }
