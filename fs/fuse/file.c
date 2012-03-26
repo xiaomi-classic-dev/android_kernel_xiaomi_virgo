@@ -1018,7 +1018,9 @@ static ssize_t fuse_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
 	if (err)
 		goto out;
 
-	file_update_time(file);
+	err = file_update_time(file);
+	if (err)
+		goto out;
 
 	if (ff && ff->rw_lower_file) {
 		/* Use iocb->ki_pos instead of pos to handle the cases of files
