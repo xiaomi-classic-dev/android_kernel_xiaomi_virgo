@@ -30,7 +30,7 @@ static inline int seccomp_mode(seccomp_t *s)
 
 typedef struct { } seccomp_t;
 
-#define secure_computing(x) do { } while (0)
+static inline int secure_computing(int this_syscall) { return 0; }
 
 static inline long prctl_get_seccomp(void)
 {
