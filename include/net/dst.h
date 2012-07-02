@@ -60,6 +60,8 @@ struct dst_entry {
 
 	unsigned short		pending_confirm;
 
+	unsigned short		pending_confirm;
+
 	short			error;
 	short			obsolete;
 	unsigned short		header_len;	/* more space at head required */
@@ -367,7 +369,8 @@ static inline struct dst_entry *skb_dst_pop(struct sk_buff *skb)
 
 extern int dst_discard(struct sk_buff *skb);
 extern void *dst_alloc(struct dst_ops *ops, struct net_device *dev,
-		       int initial_ref, int initial_obsolete, int flags);
+		       int initial_ref, int initial_obsolete,
+		       unsigned short flags);
 extern void __dst_free(struct dst_entry *dst);
 extern struct dst_entry *dst_destroy(struct dst_entry *dst);
 
