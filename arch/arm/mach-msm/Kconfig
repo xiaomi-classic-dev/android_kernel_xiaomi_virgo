@@ -3060,6 +3060,13 @@ config FASTBOOT_ENABLE
 	help
 	  just enable fastboot mode in eng build
 
+config FORCE_FAST_CHARGE
+	bool "Force AC charge mode at will"
+	default y
+	help
+		A simple sysfs interface to force adapters that
+		are detected as USB to charge as AC.
+
 endif
 
 config KERNEL_TEXT_MPU_PROT
