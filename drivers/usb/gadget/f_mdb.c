@@ -1290,7 +1290,7 @@ static int mdb_bind_config(struct usb_configuration *c)
 
 	dev->cdev = c->cdev;
 	dev->function.name = "mdb";
-	dev->function.descriptors = fs_mdb_descs;
+	dev->function.fs_descriptors = fs_mdb_descs;
 	dev->function.hs_descriptors = hs_mdb_descs;
 
 	if (gadget_is_superspeed(c->cdev->gadget)) {
