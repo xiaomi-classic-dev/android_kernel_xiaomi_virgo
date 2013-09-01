@@ -1963,7 +1963,7 @@ static int binder_thread_write(struct binder_proc *proc,
 		case BC_INCREFS_DONE:
 		case BC_ACQUIRE_DONE: {
 			void __user *node_ptr;
-			void *cookie;
+			void __user *cookie;
 			struct binder_node *node;
 
 			if (get_user_preempt_disabled(node_ptr, (void * __user *)ptr))
