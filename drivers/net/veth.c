@@ -230,6 +230,7 @@ static int veth_dev_init(struct net_device *dev)
 {
 	struct veth_net_stats __percpu *stats;
 	struct veth_priv *priv;
+	int i;
 
 	stats = alloc_percpu(struct veth_net_stats);
 	if (stats == NULL)
@@ -237,6 +238,13 @@ static int veth_dev_init(struct net_device *dev)
 
 	priv = netdev_priv(dev);
 	priv->stats = stats;
+
+	for_each_possible_cpu(i) {
+		struct veth_net_stats *veth_stats;
+		veth_stats = per_cpu_ptr(priv->stats, i);
+		u64_stats_init(&veth_stats->syncp);
+	}
+
 	return 0;
 }
 
