@@ -2,6 +2,7 @@
  * zsmalloc memory allocator
  *
  * Copyright (C) 2011  Nitin Gupta
+ * Copyright (C) 2012, 2013 Minchan Kim
  * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This code is released using a dual license strategy: BSD/GPL
