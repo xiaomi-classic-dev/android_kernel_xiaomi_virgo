@@ -83,3 +83,6 @@ GTAGS
 *.orig
 *~
 \#*#
+
+# Generated source files
+smd_rpc_sym.c
