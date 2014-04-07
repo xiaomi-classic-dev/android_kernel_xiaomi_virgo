@@ -2220,7 +2220,7 @@
 	qcom_cedev: qcedev@fd440000 {
 		compatible = "qcom,qcedev";
 		reg = <0xfd440000 0x20000>,
-		      <0xfd444000 0x8000>;
+		      <0xfd444000 0x1b000>;
 		reg-names = "crypto-base","crypto-bam-base";
 		interrupts = <0 236 0>;
 		qcom,bam-pipe-pair = <1>;
@@ -2237,7 +2237,7 @@
 	qcom_crypto: qcrypto@fd440000 {
 		compatible = "qcom,qcrypto";
 		reg = <0xfd440000 0x20000>,
-		      <0xfd444000 0x8000>;
+		      <0xfd444000 0x1b000>;
 		reg-names = "crypto-base","crypto-bam-base";
 		interrupts = <0 236 0>;
 		qcom,bam-pipe-pair = <2>;
@@ -2274,6 +2274,7 @@
 				<56 512 0 0>,
 				<56 512 3936000 393600>;
 	};
+
 	qcom,usbbam@f9304000 {
 		compatible = "qcom,usb-bam-msm";
 		reg = <0xf9304000 0x5000>,
