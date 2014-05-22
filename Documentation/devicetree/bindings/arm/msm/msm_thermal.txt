@@ -166,6 +166,9 @@ Example:
 		qti,pmic-opt-curr-temp-hysteresis = <10>;
 		qti,pmic-opt-curr-regs = "vdd-dig";
 		vdd-dig-supply=<&pm8841_s2_floor_corner>
+		qcom,default-temp = <80>;
+		qcom,efuse-data = <0xfc4b8000 0x1000 23 30 0x3>;
+		qcom,efuse-temperature-map = <0x0 80>, <0x1 70>, <0x2 80>, <0x3 80>;
 
 		qcom,vdd-dig-rstr{
 			qcom,vdd-rstr-reg = "vdd-dig";
