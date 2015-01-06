@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2015, The Linux Foundation. All rights reserved.
  * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -48,9 +48,10 @@
 							(arr[3] << 24))
 
 /* Module parameter to control power-on-alarm */
-static bool poweron_alarm;
+bool poweron_alarm;
 module_param(poweron_alarm, bool, 0644);
 MODULE_PARM_DESC(poweron_alarm, "Enable/Disable power-on alarm");
+EXPORT_SYMBOL(poweron_alarm);
 
 /* rtc driver internal structure */
 struct qpnp_rtc {
