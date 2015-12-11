@@ -1403,10 +1403,8 @@ qpnp_chg_vbatdet_lo_irq_handler(int irq, void *_chip)
 			msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
 		if (get_hw_version_major() == 4 ||
 				get_hw_version_major() == 5) {
-			getnstimeofday(&ts);
-			ts.tv_sec += THERMAL_MONITOR_INTVAL_SEC;
-			alarm_start_range(&chip->thermal_monitor_alarm,
-				timespec_to_ktime(ts), timespec_to_ktime(ts));
+			alarm_start_relative(&chip->thermal_monitor_alarm,
+				ns_to_ktime(THERMAL_MONITOR_INTVAL_SEC));
 			last_thermal_level = chip->thermal_levels - 1;
 		}
 		pm_stay_awake(chip->dev);
@@ -1825,11 +1823,8 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 
 			if (get_hw_version_major() == 4 ||
 					get_hw_version_major() == 5) {
-				getnstimeofday(&ts);
-				ts.tv_sec += THERMAL_MONITOR_INTVAL_SEC;
-				alarm_start_range(&chip->thermal_monitor_alarm,
-					timespec_to_ktime(ts),
-					timespec_to_ktime(ts));
+				alarm_start_relative(&chip->thermal_monitor_alarm,
+					ns_to_ktime(THERMAL_MONITOR_INTVAL_SEC));
 				last_thermal_level = chip->thermal_levels - 1;
 			}
 
@@ -2186,12 +2181,8 @@ qpnp_chg_chgr_chg_fastchg_irq_handler(int irq, void *_chip)
 					msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
 				if (get_hw_version_major() == 4 ||
 						get_hw_version_major() == 5) {
-					getnstimeofday(&ts);
-					ts.tv_sec += THERMAL_MONITOR_INTVAL_SEC;
-					alarm_start_range(
-						&chip->thermal_monitor_alarm,
-						timespec_to_ktime(ts),
-						timespec_to_ktime(ts));
+					alarm_start_relative(&chip->thermal_monitor_alarm,
+						ns_to_ktime(THERMAL_MONITOR_INTVAL_SEC));
 					last_thermal_level = \
 						chip->thermal_levels - 1;
 				}
@@ -3897,10 +3888,8 @@ static void qpnp_chg_thermal_monitor_work(struct work_struct *work)
 	if (last_thermal_level != thermal_level)
 		qpnp_batt_system_temp_level_set(chip, thermal_level);
 
-	getnstimeofday(&ts);
-	ts.tv_sec += THERMAL_MONITOR_INTVAL_SEC;
-	alarm_start_range(&chip->thermal_monitor_alarm,
-			timespec_to_ktime(ts), timespec_to_ktime(ts));
+	alarm_start_relative(&chip->thermal_monitor_alarm,
+		ns_to_ktime(THERMAL_MONITOR_INTVAL_SEC));
 
 	last_thermal_level = thermal_level;
 
@@ -5539,7 +5528,7 @@ qpnp_charger_probe(struct spmi_device *spmi)
 	INIT_WORK(&chip->insertion_ocv_work,
 			qpnp_chg_insertion_ocv_work);
 
-	alarm_init(&chip->thermal_monitor_alarm, ANDROID_ALARM_RTC_WAKEUP,
+	alarm_init(&chip->thermal_monitor_alarm, ALARM_REALTIME,
 		qpnp_chg_thermal_monitor_callback);
 	INIT_WORK(&chip->thermal_monitor_work,
 		qpnp_chg_thermal_monitor_work);
