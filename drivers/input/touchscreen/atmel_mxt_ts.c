@@ -594,6 +594,7 @@ struct mxt_data {
 	bool is_ignore_channel_saved;
 	bool init_complete;
 	bool use_last_golden;
+	bool irq_enabled;
 	struct mutex golden_mutex;
 	bool keys_off;
 
@@ -755,6 +756,22 @@ static u8 mxt_read_chg(struct mxt_data *data)
 
 	u8 val = (u8)gpio_get_value(gpio_intr);
 	return val;
+}
+
+static void mxt_disable_irq(struct mxt_data *data)
+{
+	if (likely(data->irq_enabled)) {
+		disable_irq(data->irq);
+		data->irq_enabled = false;
+	}
+}
+
+static void mxt_enable_irq(struct mxt_data *data)
+{
+	if (likely(!data->irq_enabled)) {
+		enable_irq(data->irq);
+		data->irq_enabled = true;
+	}
 }
 
 static int mxt_wait_for_chg(struct mxt_data *data)
@@ -3413,7 +3430,7 @@ static ssize_t mxt_update_fw_store(struct device *dev,
 	}
 
 	dev_info(dev, "Identify firmware name :%s \n", fw_name);
-	disable_irq(data->irq);
+	mxt_disable_irq(data);
 
 	error = mxt_load_fw(dev, fw_name);
 	if (error) {
@@ -3434,7 +3451,7 @@ static ssize_t mxt_update_fw_store(struct device *dev,
 	}
 
 	if (data->state == APPMODE) {
-		enable_irq(data->irq);
+		mxt_enable_irq(data);
 	}
 
 	kfree(fw_name);
@@ -4925,7 +4942,7 @@ static int mxt_suspend(struct device *dev)
 	struct mxt_data *data = i2c_get_clientdata(client);
 	struct input_dev *input_dev = data->input_dev;
 
-	disable_irq(client->irq);
+	mxt_disable_irq(data);
 
 	data->safe_count = 0;
 	cancel_delayed_work_sync(&data->update_setting_delayed_work);
@@ -4990,7 +5007,7 @@ static int mxt_resume(struct device *dev)
 
 	mutex_unlock(&input_dev->mutex);
 
-	enable_irq(client->irq);
+	mxt_enable_irq(data);
 
 	return 0;
 }
@@ -5740,6 +5757,7 @@ static int __devinit mxt_probe(struct i2c_client *client,
 		goto err_free_input_device;
 	}
 
+	data->irq_enabled = true;
 	error = sysfs_create_group(&client->dev.kobj, &mxt_attr_group);
 	if (error) {
 		dev_err(&client->dev, "Failure %d creating sysfs group\n",
@@ -5848,7 +5866,7 @@ static void mxt_shutdown(struct i2c_client *client)
 {
 	struct mxt_data *data = i2c_get_clientdata(client);
 
-	disable_irq(data->irq);
+	mxt_disable_irq(data);
 	data->state = SHUTDOWN;
 }
 
