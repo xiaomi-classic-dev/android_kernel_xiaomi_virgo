@@ -25,6 +25,10 @@
 #include "io.h"
 #include "xhci.h"
 
+#ifdef CONFIG_FORCE_FAST_CHARGE
+#include <linux/fastchg.h>
+#endif
+
 #define VBUS_REG_CHECK_DELAY	(msecs_to_jiffies(1000))
 #define MAX_INVALID_CHRGR_RETRY 3
 static int max_chgr_retry_count = MAX_INVALID_CHRGR_RETRY;
@@ -531,6 +535,11 @@ static int dwc3_otg_set_power(struct usb_phy *phy, unsigned mA)
 		return 0;
 	}
 
+#ifdef CONFIG_FORCE_FAST_CHARGE
+	if (dotg->charger->charging_disabled || mA == 0)
+		current_charge_level = NOT_FAST_CHARGING;
+#endif
+
 	if (dotg->charger->charging_disabled)
 		return 0;
 
@@ -548,6 +557,35 @@ static int dwc3_otg_set_power(struct usb_phy *phy, unsigned mA)
 
 	if (dotg->charger->chg_type == DWC3_CDP_CHARGER)
 		mA = DWC3_IDEV_CHG_MAX;
+
+#ifdef CONFIG_FORCE_FAST_CHARGE
+	if (force_fast_charge == FAST_CHARGE_FORCE_AC) {
+		switch(dotg->charger->chg_type) {
+			case DWC3_SDP_CHARGER:
+			case DWC3_CDP_CHARGER:
+				mA = USB_CHARGE_1000;
+				current_charge_level = mA;
+				break;
+			default:
+				break;
+		}
+	} else if (force_fast_charge == FAST_CHARGE_FORCE_CUSTOM_MA) {
+		switch(dotg->charger->chg_type) {
+			case DWC3_SDP_CHARGER:
+			case DWC3_CDP_CHARGER:
+				mA = usb_charge_level;
+				current_charge_level = mA;
+				break;
+			case DWC3_DCP_CHARGER:
+			case DWC3_PROPRIETARY_CHARGER:
+				mA = ac_charge_level;
+				current_charge_level = mA;
+				break;
+			default:
+				break;
+		}
+	}
+#endif
 
 	if (dotg->charger->max_power == mA)
 		return 0;

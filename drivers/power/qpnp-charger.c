@@ -2028,14 +2028,17 @@ static irqreturn_t
 qpnp_chg_chgr_chg_fastchg_irq_handler(int irq, void *_chip)
 {
 	struct qpnp_chg_chip *chip = _chip;
+
 #ifdef CONFIG_ANDROID_INTF_ALARM_DEV
 	ktime_t kt;
 #else
   	struct timespec ts;
 #endif
-	bool fastchg_on = false;
+    
+    //Enable fast charge by default
+	bool fastchg_on = true;
 
-	fastchg_on = qpnp_chg_is_fastchg_on(chip);
+	//fastchg_on = qpnp_chg_is_fastchg_on(chip);
 
 	pr_info("FAST_CHG IRQ triggered, fastchg_on: %d\n", fastchg_on);
 
