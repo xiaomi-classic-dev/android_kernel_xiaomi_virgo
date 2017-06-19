@@ -38,28 +38,28 @@
 eHalStatus palAllocateMemory_debug( tHddHandle hHdd, void **ppMemory, tANI_U32 numBytes, char* fileName, tANI_U32 lineNum )
 {
    eHalStatus halStatus = eHAL_STATUS_SUCCESS;
-
+   
    *ppMemory = vos_mem_malloc_debug( numBytes, fileName, lineNum );
-
-   if ( NULL == *ppMemory )
+   
+   if ( NULL == *ppMemory ) 
    {
       halStatus = eHAL_STATUS_FAILURE;
    }
-
+   
    return( halStatus );
 }
 #else
 eHalStatus palAllocateMemory( tHddHandle hHdd, void **ppMemory, tANI_U32 numBytes )
 {
    eHalStatus halStatus = eHAL_STATUS_SUCCESS;
-
+   
    *ppMemory = vos_mem_malloc( numBytes );
-
-   if ( NULL == *ppMemory )
+   
+   if ( NULL == *ppMemory ) 
    {
       halStatus = eHAL_STATUS_FAILURE;
    }
-
+   
    return( halStatus );
 }
 #endif
@@ -68,14 +68,14 @@ eHalStatus palAllocateMemory( tHddHandle hHdd, void **ppMemory, tANI_U32 numByte
 eHalStatus palFreeMemory( tHddHandle hHdd, void *pMemory )
 {
    vos_mem_free( pMemory );
-
+   
    return( eHAL_STATUS_SUCCESS );
 }
 
 eHalStatus palFillMemory( tHddHandle hHdd, void *pMemory, tANI_U32 numBytes, tANI_BYTE fillValue )
 {
    vos_mem_set( pMemory, numBytes, fillValue );
-
+   
    return( eHAL_STATUS_SUCCESS );
 }
 
@@ -83,7 +83,7 @@ eHalStatus palFillMemory( tHddHandle hHdd, void *pMemory, tANI_U32 numBytes, tAN
 eHalStatus palCopyMemory( tHddHandle hHdd, void *pDst, const void *pSrc, tANI_U32 numBytes )
 {
    vos_mem_copy( pDst, pSrc, numBytes );
-
+   
    return( eHAL_STATUS_SUCCESS );
 }
 
@@ -92,46 +92,46 @@ eHalStatus palCopyMemory( tHddHandle hHdd, void *pDst, const void *pSrc, tANI_U3
 tANI_BOOLEAN palEqualMemory( tHddHandle hHdd, void *pMemory1, void *pMemory2, tANI_U32 numBytes )
 {
    return( vos_mem_compare( pMemory1, pMemory2, numBytes ) );
-}
+}   
 #endif
 
 eHalStatus palPktAlloc(tHddHandle hHdd, eFrameType frmType, tANI_U16 size, void **data, void **ppPacket)
 {
    eHalStatus halStatus = eHAL_STATUS_FAILURE;
    VOS_STATUS vosStatus;
-
+   
    vos_pkt_t *pVosPacket;
-
-   do
+   
+   do 
    {
-      // we are only handling the 802_11_MGMT frame type for PE/LIM.  All other frame types should be
+      // we are only handling the 802_11_MGMT frame type for PE/LIM.  All other frame types should be 
       // ported to use the VOSS APIs directly and should not be using this palPktAlloc API.
       VOS_ASSERT( HAL_TXRX_FRM_802_11_MGMT == frmType );
-
+    
       if ( HAL_TXRX_FRM_802_11_MGMT != frmType ) break;
-
+   
       // allocate one 802_11_MGMT VOS packet, zero the packet and fail the call if nothing is available.
       // if we cannot get this vos packet, fail.
       vosStatus = vos_pkt_get_packet( &pVosPacket, VOS_PKT_TYPE_TX_802_11_MGMT, size, 1, VOS_TRUE, NULL, NULL );
       if ( !VOS_IS_STATUS_SUCCESS( vosStatus ) ) break;
-
+      
       // Reserve the space at the head of the packet for the caller.  If we cannot reserve the space
       // then we have to fail (return the packet to voss first!)
       vosStatus = vos_pkt_reserve_head( pVosPacket, data, size );
-      if ( !VOS_IS_STATUS_SUCCESS( vosStatus ) )
+      if ( !VOS_IS_STATUS_SUCCESS( vosStatus ) ) 
       {
          vos_pkt_return_packet( pVosPacket );
          break;
       }
-
+      
       // Everything went well if we get here.  Return the packet pointer to the caller and indicate
       // success to the caller.
       *ppPacket = (void *)pVosPacket;
-
+      
       halStatus = eHAL_STATUS_SUCCESS;
-
+   
    } while( 0 );
-
+   
    return( halStatus );
 }
 
@@ -141,28 +141,28 @@ void palPktFree( tHddHandle hHdd, eFrameType frmType, void* buf, void *pPacket)
 {
    vos_pkt_t *pVosPacket = (vos_pkt_t *)pPacket;
    VOS_STATUS vosStatus;
-
-   do
+      
+   do 
    {
       VOS_ASSERT( pVosPacket );
-
+      
       if ( !pVosPacket ) break;
-
-      // we are only handling the 802_11_MGMT frame type for PE/LIM.  All other frame types should be
+      
+      // we are only handling the 802_11_MGMT frame type for PE/LIM.  All other frame types should be 
       // ported to use the VOSS APIs directly and should not be using this palPktAlloc API.
       VOS_ASSERT( HAL_TXRX_FRM_802_11_MGMT == frmType );
       if ( HAL_TXRX_FRM_802_11_MGMT != frmType ) break;
-
-      // return the vos packet to Voss.  Nothing to do if this fails since the palPktFree does not
+      
+      // return the vos packet to Voss.  Nothing to do if this fails since the palPktFree does not 
       // have a return code.
       vosStatus = vos_pkt_return_packet( pVosPacket );
       VOS_ASSERT( VOS_IS_STATUS_SUCCESS( vosStatus ) );
-
+      
    } while( 0 );
-
+   
    return;
 }
-
+   
 
 
 tANI_TIMESTAMP palGetTickCount(tHddHandle hHdd)
@@ -179,17 +179,17 @@ tANI_U32 pal_be32_to_cpu(tANI_U32 x)
 tANI_U32 pal_cpu_to_be32(tANI_U32 x)
 {
    return(( x ) );
-}
+}   
 
 tANI_U16 pal_be16_to_cpu(tANI_U16 x)
 {
    return( ( x ) );
-}
-
+}   
+   
 tANI_U16 pal_cpu_to_be16(tANI_U16 x)
 {
    return( ( x ) );
-}
+}   
 
 
 
@@ -198,11 +198,11 @@ eHalStatus palSpinLockAlloc( tHddHandle hHdd, tPalSpinLockHandle *pHandle )
    eHalStatus halStatus = eHAL_STATUS_FAILURE;
    VOS_STATUS vosStatus;
    vos_lock_t *pLock;
-
+   
    do
    {
       pLock = vos_mem_malloc( sizeof( vos_lock_t ) );
-
+   
       if ( NULL == pLock ) break;
 
       vos_mem_set(pLock, sizeof( vos_lock_t ), 0);
@@ -213,13 +213,13 @@ eHalStatus palSpinLockAlloc( tHddHandle hHdd, tPalSpinLockHandle *pHandle )
          vos_mem_free( pLock );
          break;
       }
-
+      
       *pHandle = (tPalSpinLockHandle)pLock;
       halStatus = eHAL_STATUS_SUCCESS;
-
+      
    } while( 0 );
-
-   return( halStatus );
+   
+   return( halStatus );   
 }
 
 
@@ -228,14 +228,14 @@ eHalStatus palSpinLockFree( tHddHandle hHdd, tPalSpinLockHandle hSpinLock )
    eHalStatus halStatus = eHAL_STATUS_FAILURE;
    vos_lock_t *pLock = (vos_lock_t *)hSpinLock;
    VOS_STATUS vosStatus;
-
+   
    vosStatus = vos_lock_destroy( pLock );
    if ( VOS_IS_STATUS_SUCCESS( vosStatus ) )
    {
       // if we successfully destroy the lock, free
       // the memory and indicate success to the caller.
       vos_mem_free( pLock );
-
+      
       halStatus = eHAL_STATUS_SUCCESS;
    }
    return( halStatus );
@@ -247,7 +247,7 @@ eHalStatus palSpinLockTake( tHddHandle hHdd, tPalSpinLockHandle hSpinLock )
    eHalStatus halStatus = eHAL_STATUS_FAILURE;
    vos_lock_t *pLock = (vos_lock_t *)hSpinLock;
    VOS_STATUS vosStatus;
-
+   
    vosStatus = vos_lock_acquire( pLock );
    if ( VOS_IS_STATUS_SUCCESS( vosStatus ) )
    {
@@ -255,10 +255,10 @@ eHalStatus palSpinLockTake( tHddHandle hHdd, tPalSpinLockHandle hSpinLock )
       // to the caller.
       halStatus = eHAL_STATUS_SUCCESS;
    }
-
+   
    return( halStatus );
-}
-
+}   
+   
 
 
 
@@ -268,7 +268,7 @@ eHalStatus palSpinLockGive( tHddHandle hHdd, tPalSpinLockHandle hSpinLock )
    eHalStatus halStatus = eHAL_STATUS_FAILURE;
    vos_lock_t *pLock = (vos_lock_t *)hSpinLock;
    VOS_STATUS vosStatus;
-
+   
    vosStatus = vos_lock_release( pLock );
    if ( VOS_IS_STATUS_SUCCESS( vosStatus ) )
    {
@@ -278,7 +278,7 @@ eHalStatus palSpinLockGive( tHddHandle hHdd, tPalSpinLockHandle hSpinLock )
    }
 
    return( halStatus );
-}
+} 
 
 
 // Caller of this function MUST dynamically allocate memory for pBuf
@@ -318,7 +318,7 @@ eHalStatus palSendMBMessage(tHddHandle hHdd, void *pBuf)
 
    return( halStatus );
 }
-
+  
 
 
 //All semophore functions are no-op here
@@ -361,7 +361,7 @@ eHalStatus palSemaphoreGive( tHddHandle hHdd, tPalSemaphoreHandle hSemaphore )
     return (eHAL_STATUS_SUCCESS);
 }
 
-eHalStatus palMutexAlloc( tHddHandle hHdd, tPalSemaphoreHandle *pHandle)
+eHalStatus palMutexAlloc( tHddHandle hHdd, tPalSemaphoreHandle *pHandle) 
 {
     (void)hHdd;
     (void)pHandle;

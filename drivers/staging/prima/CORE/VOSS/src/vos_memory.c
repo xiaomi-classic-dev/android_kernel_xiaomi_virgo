@@ -30,25 +30,25 @@
 
   @brief Virtual Operating System Services Memory API
 
-
+  
 ===========================================================================*/
 
-/*===========================================================================
-
-                       EDIT HISTORY FOR FILE
-
-
-  This section contains comments describing changes made to the module.
-  Notice that changes are listed in reverse chronological order.
-
-
-  $Header:$ $DateTime: $ $Author: $
-
-
-  when        who    what, where, why
+/*=========================================================================== 
+    
+                       EDIT HISTORY FOR FILE 
+   
+                         
+  This section contains comments describing changes made to the module. 
+  Notice that changes are listed in reverse chronological order. 
+   
+   
+  $Header:$ $DateTime: $ $Author: $ 
+   
+   
+  when        who    what, where, why 
   --------    ---    --------------------------------------------------------
-
-===========================================================================*/
+     
+===========================================================================*/ 
 
 /*---------------------------------------------------------------------------
  * Include Files
@@ -90,7 +90,7 @@ struct s_vos_mem_struct
 /*---------------------------------------------------------------------------
  * Type Declarations
  * ------------------------------------------------------------------------*/
-
+  
 /*---------------------------------------------------------------------------
  * Data definitions
  * ------------------------------------------------------------------------*/
@@ -102,9 +102,9 @@ struct s_vos_mem_struct
 void vos_mem_init()
 {
    /* Initalizing the list with maximum size of 60000 */
-   hdd_list_init(&vosMemList, 60000);
+   hdd_list_init(&vosMemList, 60000);  
    memory_dbug_flag = 1;
-   return;
+   return; 
 }
 
 void vos_mem_clean()
@@ -122,7 +122,7 @@ void vos_mem_clean()
        unsigned int prev_mleak_lineNum = 0;
        unsigned int prev_mleak_sz = 0;
        unsigned int mleak_cnt = 0;
-
+ 
        VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
              "%s: List is not Empty. listSize %d ", __func__, (int)listSize);
 
@@ -230,7 +230,7 @@ v_VOID_t * vos_mem_malloc_debug( v_SIZE_t size, char* fileName, v_U32_t lineNum)
       return memPtr;
    }
 
-   new_size = size + sizeof(struct s_vos_mem_struct) + 8;
+   new_size = size + sizeof(struct s_vos_mem_struct) + 8; 
 
    time_before_kmalloc = vos_timer_get_system_time();
    memStruct = (struct s_vos_mem_struct*)kmalloc(new_size, flags);
@@ -258,11 +258,11 @@ v_VOID_t * vos_mem_malloc_debug( v_SIZE_t size, char* fileName, v_U32_t lineNum)
       spin_unlock_irqrestore(&vosMemList.lock, IrqFlags);
       if(VOS_STATUS_SUCCESS != vosStatus)
       {
-         VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
+         VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR, 
              "%s: Unable to insert node into List vosStatus %d", __func__, vosStatus);
       }
 
-      memPtr = (v_VOID_t*)(memStruct + 1);
+      memPtr = (v_VOID_t*)(memStruct + 1); 
    }
    return memPtr;
 }
@@ -295,14 +295,14 @@ v_VOID_t vos_mem_free( v_VOID_t *ptr )
         {
             if(0 == vos_mem_compare(memStruct->header, &WLAN_MEM_HEADER[0], sizeof(WLAN_MEM_HEADER)) )
             {
-               VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_FATAL,
-                    "Memory Header is corrupted. MemInfo: Filename %s, LineNum %d",
+               VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_FATAL, 
+                    "Memory Header is corrupted. MemInfo: Filename %s, LineNum %d", 
                                 memStruct->fileName, (int)memStruct->lineNum);
             }
             if(0 == vos_mem_compare( (v_U8_t*)ptr + memStruct->size, &WLAN_MEM_TAIL[0], sizeof(WLAN_MEM_TAIL ) ) )
             {
-               VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_FATAL,
-                    "Memory Trailer is corrupted. MemInfo: Filename %s, LineNum %d",
+               VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_FATAL, 
+                    "Memory Trailer is corrupted. MemInfo: Filename %s, LineNum %d", 
                                 memStruct->fileName, (int)memStruct->lineNum);
             }
             kfree((v_VOID_t*)memStruct);
@@ -322,7 +322,7 @@ v_VOID_t * vos_mem_malloc( v_SIZE_t size )
    v_VOID_t* memPtr = NULL;
 #ifdef CONFIG_WCNSS_MEM_PRE_ALLOC
     v_VOID_t* pmem;
-#endif
+#endif    
    unsigned long  time_before_kmalloc;
 
    if (size > (1024*1024) || size == 0)
@@ -339,7 +339,7 @@ v_VOID_t * vos_mem_malloc( v_SIZE_t size )
    if(size > WCNSS_PRE_ALLOC_GET_THRESHOLD)
    {
        pmem = wcnss_prealloc_get(size);
-       if(NULL != pmem)
+       if(NULL != pmem) 
            return pmem;
    }
 #endif
@@ -382,7 +382,6 @@ v_VOID_t * vos_mem_vmalloc(v_SIZE_t size)
                   "%s invalid size: %u", __func__, size);
         return NULL;
     }
-
     time_before_vmalloc = vos_timer_get_system_time();
     memPtr = vmalloc(size);
     /* If time taken by vmalloc is greater than VOS_GET_MEMORY_TIME_THRESHOLD
@@ -435,7 +434,7 @@ v_VOID_t vos_mem_zero( v_VOID_t *ptr, v_SIZE_t numBytes )
       return;
    }
    memset(ptr, 0, numBytes);
-
+   
 }
 
 v_VOID_t vos_mem_copy( v_VOID_t *pDst, const v_VOID_t *pSrc, v_SIZE_t numBytes )
@@ -488,7 +487,7 @@ v_BOOL_t vos_mem_compare(
                           v_VOID_t *pMemory2,
 #endif
                           v_U32_t numBytes )
-{
+{ 
    if (0 == numBytes)
    {
       // special case where pMemory1 or pMemory2 can be NULL
@@ -504,38 +503,38 @@ v_BOOL_t vos_mem_compare(
       return VOS_FALSE;
    }
    return (memcmp(pMemory1, pMemory2, numBytes)?VOS_FALSE:VOS_TRUE);
-}
+}   
 
 
 v_SINT_t vos_mem_compare2( v_VOID_t *pMemory1, v_VOID_t *pMemory2, v_U32_t numBytes )
 
-{
+{ 
    return( (v_SINT_t) memcmp( pMemory1, pMemory2, numBytes ) );
 }
 
 /*----------------------------------------------------------------------------
-
+  
   \brief vos_mem_dma_malloc() - vOSS DMA Memory Allocation
 
-  This function will dynamicallly allocate the specified number of bytes of
+  This function will dynamicallly allocate the specified number of bytes of 
   memory. This memory will have special attributes making it DMA friendly i.e.
-  it will exist in contiguous, 32-byte aligned uncached memory. A normal
-  vos_mem_malloc does not yield memory with these attributes.
+  it will exist in contiguous, 32-byte aligned uncached memory. A normal 
+  vos_mem_malloc does not yield memory with these attributes. 
 
   NOTE: the special DMA friendly memory is very scarce and this API must be
   used sparingly
 
-  On WM, there is nothing special about this memory. SDHC allocates the
+  On WM, there is nothing special about this memory. SDHC allocates the 
   DMA friendly buffer and copies the data into it
-
-  \param size - the number of bytes of memory to allocate.
-
-  \return Upon successful allocate, returns a non-NULL pointer to the
-  allocated memory.  If this function is unable to allocate the amount of
+  
+  \param size - the number of bytes of memory to allocate.  
+  
+  \return Upon successful allocate, returns a non-NULL pointer to the 
+  allocated memory.  If this function is unable to allocate the amount of 
   memory specified (for any reason) it returns NULL.
-
+    
   \sa
-
+  
   --------------------------------------------------------------------------*/
 #ifdef MEMORY_DEBUG
 v_VOID_t * vos_mem_dma_malloc_debug( v_SIZE_t size, char* fileName, v_U32_t lineNum)
@@ -553,7 +552,7 @@ v_VOID_t * vos_mem_dma_malloc_debug( v_SIZE_t size, char* fileName, v_U32_t line
    if (!memory_dbug_flag)
       return kmalloc(size, GFP_KERNEL);
 
-   new_size = size + sizeof(struct s_vos_mem_struct) + 8;
+   new_size = size + sizeof(struct s_vos_mem_struct) + 8; 
 
    memStruct = (struct s_vos_mem_struct*)kmalloc(new_size,GFP_KERNEL);
 
@@ -573,11 +572,11 @@ v_VOID_t * vos_mem_dma_malloc_debug( v_SIZE_t size, char* fileName, v_U32_t line
       spin_unlock(&vosMemList.lock);
       if(VOS_STATUS_SUCCESS != vosStatus)
       {
-         VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
+         VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR, 
              "%s: Unable to insert node into List vosStatus %d", __func__, vosStatus);
       }
 
-      memPtr = (v_VOID_t*)(memStruct + 1);
+      memPtr = (v_VOID_t*)(memStruct + 1); 
    }
 
    return memPtr;
@@ -601,14 +600,14 @@ v_VOID_t vos_mem_dma_free( v_VOID_t *ptr )
         {
             if(0 == vos_mem_compare(memStruct->header, &WLAN_MEM_HEADER[0], sizeof(WLAN_MEM_HEADER)) )
             {
-               VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_FATAL,
-                    "Memory Header is corrupted. MemInfo: Filename %s, LineNum %d",
+               VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_FATAL, 
+                    "Memory Header is corrupted. MemInfo: Filename %s, LineNum %d", 
                                 memStruct->fileName, (int)memStruct->lineNum);
             }
             if(0 == vos_mem_compare( (v_U8_t*)ptr + memStruct->size, &WLAN_MEM_TAIL[0], sizeof(WLAN_MEM_TAIL ) ) )
             {
-               VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_FATAL,
-                    "Memory Trailer is corrupted. MemInfo: Filename %s, LineNum %d",
+               VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_FATAL, 
+                    "Memory Trailer is corrupted. MemInfo: Filename %s, LineNum %d", 
                                 memStruct->fileName, (int)memStruct->lineNum);
             }
             kfree((v_VOID_t*)memStruct);
@@ -629,21 +628,21 @@ v_VOID_t* vos_mem_dma_malloc( v_SIZE_t size )
 }
 
 /*----------------------------------------------------------------------------
-
+  
   \brief vos_mem_dma_free() - vOSS DMA Free Memory
 
   This function will free special DMA friendly memory pointed to by 'ptr'.
 
   On WM, there is nothing special about the memory being free'd. SDHC will
   take care of free'ing the DMA friendly buffer
-
-  \param ptr - pointer to the starting address of the memory to be
-               free'd.
-
+  
+  \param ptr - pointer to the starting address of the memory to be 
+               free'd.  
+  
   \return Nothing
-
+    
   \sa
-
+  
   --------------------------------------------------------------------------*/
 v_VOID_t vos_mem_dma_free( v_VOID_t *ptr )
 {
