@@ -1,5 +1,25 @@
 /*
- * Copyright (c) 2012-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -19,12 +39,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 /******************************************************************************
 
 *
@@ -35,8 +49,11 @@
 
 * Description: Power Management Control (PMC) API definitions.
 
+* Copyright 2008 (c) Qualcomm, Incorporated.  
+
 * All Rights Reserved.
 
+* Qualcomm Confidential and Proprietary.
 
 *
 
@@ -56,13 +73,10 @@
 //should be large enough to allow the auth, DHCP handshake to complete
 #define BMPS_TRAFFIC_TIMER_ALLOW_SECURITY_DHCP 8000  //unit = ms
 
-//This timer value is used to start the timer right after key completion
-//during roaming. This should be small enough to allow STA to enter PS
-//immediately after key completion as no DHCP phase during roaming.
-#define TRAFFIC_TIMER_ROAMING 100  //unit = ms
-
 #define PMC_IS_CHIP_ACCESSIBLE(pmcState) ( (IMPS != (pmcState)) && (REQUEST_IMPS != (pmcState)) && \
        (STANDBY != (pmcState)) && (REQUEST_STANDBY != (pmcState)) )
+
+
 
 /* Power events that are signaled to PMC. */
 
@@ -183,6 +197,7 @@ typedef enum ePmcState
 
 } tPmcState;
 
+
 /* Which beacons should be forwarded to the host. */
 
 typedef enum ePmcBeaconsToForward
@@ -216,11 +231,8 @@ typedef enum ePmcSmpsMode
 
 } tPmcSmpsMode;
 
-typedef enum
-{
-    eWOWL_EXIT_USER,
-    eWOWL_EXIT_WAKEIND
-}tWowlExitSource;
+
+
 
 /* Configuration parameters for Idle Mode Power Save (IMPS). */
 
@@ -301,6 +313,7 @@ typedef struct sPmcSmpsConfigParams
 
 
 /* Routine definitions. */
+
 extern eHalStatus pmcOpen (tHalHandle hHal);
 
 extern eHalStatus pmcStart (tHalHandle hHal);
@@ -423,7 +436,7 @@ extern eHalStatus pmcEnterWowl (
 #endif // WLAN_WAKEUP_EVENTS
     tpSirSmeWowlEnterParams wowlEnterParams, tANI_U8 sessionId);
 
-extern eHalStatus pmcExitWowl (tHalHandle hHal, tWowlExitSource wowlExitSrc);
+extern eHalStatus pmcExitWowl (tHalHandle hHal);
 
 
 extern eHalStatus pmcSetHostOffload (tHalHandle hHal, tpSirHostOffloadReq pRequest,

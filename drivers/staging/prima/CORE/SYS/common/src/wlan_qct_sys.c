@@ -1,5 +1,25 @@
 /*
- * Copyright (c) 2012-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -19,12 +39,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 /*===========================================================================
 
                W L A N   S Y S T E M   M O D U L E
@@ -35,6 +49,8 @@ DESCRIPTION
   in the Gen6 host software.
 
 
+  Copyright (c) 2008 QUALCOMM Incorporated. All Rights Reserved.
+  Qualcomm Confidential and Proprietary
 ===========================================================================*/
 
 /*===========================================================================
@@ -71,7 +87,6 @@ when        who         what, where, why
 #include "wlan_qct_wda.h"
 #include "sme_Api.h"
 #include "macInitApi.h"
-#include "vos_sched.h"
 
 VOS_STATUS WLANFTM_McProcessMsg (v_VOID_t *message);
 
@@ -150,11 +165,11 @@ VOS_STATUS sysStop( v_CONTEXT_t pVosContext )
    /* post a message to SYS module in MC to stop SME and MAC */
    sysBuildMessageHeader( SYS_MSG_ID_MC_STOP, &sysMsg );
 
-   // Save the user callback and user data
-
+   // Save the user callback and user data to callback in the body pointer
+   // and body data portion of the message.
    // finished.
-   sysMsg.callback = sysStopCompleteCb;
-   sysMsg.bodyptr  = (void *) &gStopEvt;
+   sysMsg.bodyptr = (void *)sysStopCompleteCb;
+   sysMsg.bodyval = (v_U32_t) &gStopEvt;
 
    // post the message..
    vosStatus = vos_mq_post_message( VOS_MQ_ID_SYS, &sysMsg );
@@ -204,8 +219,8 @@ typedef struct sPolFileHeader
 {
   tPolFileVersion FileVersion;
   tPolFileVersion HWCapabilities;
-  unsigned int   FileLength;
-  unsigned int   NumDirectoryEntries;
+  unsigned long   FileLength;
+  unsigned long   NumDirectoryEntries;
 
 } tPolFileHeader;
 
@@ -224,9 +239,9 @@ typedef enum ePolFileDirTypes
 
 typedef struct sPolFileDirEntry
 {
-  unsigned int DirEntryType;
-  unsigned int DirEntryFileOffset;
-  unsigned int DirEntryLength;
+  unsigned long DirEntryType;
+  unsigned long DirEntryFileOffset;
+  unsigned long DirEntryLength;
 
 } tPolFileDirEntry;
 
@@ -345,7 +360,7 @@ VOS_STATUS sysMcProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
             /* Handling for this message is not needed now so adding 
              *debug print and VOS_ASSERT*/
             VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
-                       " Received SYS_MSG_ID_MC_START message msgType= %d [0x%08x]",
+                       " Received SYS_MSG_ID_MC_START message msgType= %d [0x%08lx]",
                        pMsg->type, pMsg->type );
             VOS_ASSERT(0);
             break;
@@ -371,7 +386,7 @@ VOS_STATUS sysMcProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
                vosStatus = macStop( hHal, HAL_STOP_TYPE_SYS_DEEP_SLEEP );
                VOS_ASSERT( VOS_IS_STATUS_SUCCESS( vosStatus ) );
 
-               ((sysResponseCback)pMsg->callback)((v_VOID_t *)pMsg->bodyptr);
+               ((sysResponseCback)pMsg->bodyptr)((v_VOID_t *)pMsg->bodyval);
 
                vosStatus = VOS_STATUS_SUCCESS;
             }
@@ -382,23 +397,24 @@ VOS_STATUS sysMcProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
          // function that is in the message.
          case SYS_MSG_ID_MC_THR_PROBE:
          {
-#ifdef WLAN_LOGGING_SOCK_SVC_ENABLE
-             if(pMsg->callback)
-                ((sysThreadProbeCback)pMsg->callback)(current->pid);
-#endif
+            VOS_TRACE(VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
+                       " Received SYS_MSG_ID_MC_THR_PROBE message msgType = %d [0x%08lx]",
+                       pMsg->type, pMsg->type);
             break;
          }
 
          case SYS_MSG_ID_MC_TIMER:
          {
-            vos_timer_callback_t timerCB = pMsg->callback;
+            vos_timer_callback_t timerCB;
+            // hummmm... note says...
+            // invoke the timer callback and the user data stick
+            // into the bodyval; no body to free.    I think this is
+            // what that means.
+            timerCB = (vos_timer_callback_t)pMsg->bodyptr;
 
-            if (NULL != timerCB)
-            {
-               vos_ssr_protect(__func__);
-               timerCB(pMsg->bodyptr);
-               vos_ssr_unprotect(__func__);
-            }
+            // make the callback to the timer routine...
+            timerCB( (v_VOID_t *)pMsg->bodyval );
+
             break;
          }
          case SYS_MSG_ID_FTM_RSP:
@@ -406,10 +422,11 @@ VOS_STATUS sysMcProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
              WLANFTM_McProcessMsg((v_VOID_t *)pMsg->bodyptr);
              break;
          }
+
          default:
          {
             VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
-                       "Unknown message type in sysMcProcessMsg() msgType= %d [0x%08x]",
+                       "Unknown message type in sysMcProcessMsg() msgType= %d [0x%08lx]",
                        pMsg->type, pMsg->type );
             break;
         }
@@ -429,7 +446,7 @@ VOS_STATUS sysMcProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
 
             VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
                        "Received SYS message cookie with unidentified "
-                       "MC message type= %d [0x%08X]", pMsg->type, pMsg->type );
+                       "MC message type= %d [0x%08lX]", pMsg->type, pMsg->type );
 
             vosStatus = VOS_STATUS_E_BADMSG;
             if (pMsg->bodyptr) 
@@ -471,28 +488,36 @@ VOS_STATUS sysTxProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
          // function that is in the message.
          case SYS_MSG_ID_TX_THR_PROBE:
          {
-#ifdef WLAN_LOGGING_SOCK_SVC_ENABLE
-            if(pMsg->callback)
-               ((sysThreadProbeCback)pMsg->callback)(current->pid);
-#endif
+           /* Handling for this message is not needed now so adding 
+            * debug print and VOS_ASSERT*/
+            VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
+                       " Received SYS_MSG_ID_TX_THR_PROBE message msgType= %d [0x%08lx]",
+                       pMsg->type, pMsg->type );
+            VOS_ASSERT(0);
+
             break;
          }
 
          case SYS_MSG_ID_TX_TIMER:
          {
-            vos_timer_callback_t timerCB = pMsg->callback;
+            vos_timer_callback_t timerCB;
 
-            if (NULL != timerCB)
-            {
-               timerCB(pMsg->bodyptr);
-            }
+            // hummmm... note says...
+            // invoke the timer callback and the user data stick
+            // into the bodyval; no body to free.    I think this is
+            // what that means.
+            timerCB = (vos_timer_callback_t)pMsg->bodyptr;
+
+            // make the callback to the timer routine...
+            timerCB( (v_VOID_t *)pMsg->bodyval );
+
             break;
          }
 
          default:
          {
             VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
-                       "Unknown message type in sysTxProcessMsg() msgType= %d [0x%08x]",
+                       "Unknown message type in sysTxProcessMsg() msgType= %d [0x%08lx]",
                        pMsg->type, pMsg->type );
             break;
         }
@@ -505,7 +530,7 @@ VOS_STATUS sysTxProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
 
       VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
                  "Received SYS message cookie with unidentified TX message "
-                 " type= %d [0x%08X]", pMsg->type, pMsg->type );
+                 " type= %d [0x%08lX]", pMsg->type, pMsg->type );
 
       vosStatus = VOS_STATUS_E_BADMSG;
    }   // end else
@@ -538,28 +563,24 @@ VOS_STATUS sysRxProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
       {
          case SYS_MSG_ID_RX_TIMER:
          {
-            vos_timer_callback_t timerCB = pMsg->callback;
+            vos_timer_callback_t timerCB;
 
-            if (NULL != timerCB)
-            {
-               timerCB(pMsg->bodyptr);
-            }
-            break;
-         }
+            // hummmm... note says...
+            // invoke the timer callback and the user data stick
+            // into the bodyval; no body to free.    I think this is
+            // what that means.
+            timerCB = (vos_timer_callback_t)pMsg->bodyptr;
 
-         case SYS_MSG_ID_RX_THR_PROBE:
-         {
-#ifdef WLAN_LOGGING_SOCK_SVC_ENABLE
-            if(pMsg->callback)
-                ((sysThreadProbeCback)pMsg->callback)(current->pid);
-#endif
+            // make the callback to the timer routine...
+            timerCB( (v_VOID_t *)pMsg->bodyval );
+
             break;
          }
 
          default:
          {
             VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
-                       "Unknown message type in sysRxProcessMsg() msgType= %d [0x%08x]",
+                       "Unknown message type in sysRxProcessMsg() msgType= %d [0x%08lx]",
                        pMsg->type, pMsg->type );
             break;
         }
@@ -572,7 +593,7 @@ VOS_STATUS sysRxProcessMsg( v_CONTEXT_t pVosContext, vos_msg_t *pMsg )
 
       VOS_TRACE( VOS_MODULE_ID_SYS, VOS_TRACE_LEVEL_ERROR,
                  "Received SYS message cookie with unidentified RX message "
-                 " type= %d [0x%08X]", pMsg->type, pMsg->type );
+                 " type= %d [0x%08lX]", pMsg->type, pMsg->type );
 
       vosStatus = VOS_STATUS_E_BADMSG;
    }   // end else

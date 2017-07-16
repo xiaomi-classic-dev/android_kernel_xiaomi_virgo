@@ -1,5 +1,25 @@
 /*
- * Copyright (c) 2012,2014-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -19,12 +39,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 /**=========================================================================
   
   \file  wlan_qct_pal_api.c
@@ -34,6 +48,9 @@
                
    Definitions for platform Windows.
   
+   Copyright 2010 (c) Qualcomm, Incorporated.  All Rights Reserved.
+   
+   Qualcomm Confidential and Proprietary.
   
   ========================================================================*/
 
@@ -48,14 +65,14 @@
 #include "vos_api.h"
 
 #include "dma-mapping.h"
-#include <linux/version.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0))
-#include <soc/qcom/subsystem_restart.h>
-#else
 #include <mach/subsystem_restart.h>
-#endif
 #include <linux/wcnss_wlan.h>
 
+typedef struct sPalStruct
+{
+   /*?must check the data type*/
+   void* devHandle;
+} tPalContext;
 
 #define WPAL_GET_NDIS_HANDLE(p)  ( ((tPalContext *)(p))->devHandle )
 
@@ -83,17 +100,18 @@ typedef struct
  *                     is opaque to caller.
  *                    Caller save the returned pointer for future use when
  *                    calling PAL APIs.
- * @param devHandle pointer to the OS specific device handle.
+ * @param pOSContext Pointer to a context that is OS specific. This is NULL is a 
+                     particular PAL doesn't use it for that OS.
  * 
  * @return wpt_status eWLAN_PAL_STATUS_SUCCESS - success. Otherwise fail.
  */
-wpt_status wpalOpen(void **ppPalContext, void *devHandle)
+wpt_status wpalOpen(void **ppPalContext, void *pOSContext)
 {
    wpt_status status;
 
-   gContext.devHandle = devHandle;
+   gContext.devHandle = pOSContext;
 
-   status = wpalDeviceInit(devHandle);
+   status = wpalDeviceInit(pOSContext);
    if (!WLAN_PAL_IS_STATUS_SUCCESS(status))
    {
       WPAL_TRACE(eWLAN_MODULE_PAL, eWLAN_PAL_TRACE_LEVEL_FATAL,
@@ -209,19 +227,17 @@ void wpalMemoryFill(void *buf, wpt_uint32 size, wpt_byte bFill)
  */
 void *wpalDmaMemoryAllocate(wpt_uint32 size, void **ppPhysicalAddr)
 {
-   struct device *wcnss_device = (struct device *) gContext.devHandle;
    void *pv = NULL;
    dma_addr_t PhyAddr;
    wpt_uint32 uAllocLen = size + sizeof(tPalDmaMemInfo);
    
-   pv = dma_alloc_coherent(wcnss_device, uAllocLen, &PhyAddr, GFP_KERNEL);
+   pv = dma_alloc_coherent(NULL, uAllocLen, &PhyAddr, GFP_KERNEL);
    if ( NULL == pv ) 
    {
      WPAL_TRACE(eWLAN_MODULE_PAL, eWLAN_PAL_TRACE_LEVEL_ERROR, 
                  "%s Unable to allocate DMA buffer", __func__);
      return NULL;
    }
-   wpalMemoryZero(pv, uAllocLen);
 
    
    ((tPalDmaMemInfo *)pv)->length  = uAllocLen;
@@ -241,14 +257,12 @@ void *wpalDmaMemoryAllocate(wpt_uint32 size, void **ppPhysicalAddr)
  */
 void wpalDmaMemoryFree(void *pv)
 {
-   struct device *wcnss_device = (struct device *) gContext.devHandle;
-
    tPalDmaMemInfo *pMemInfo = (tPalDmaMemInfo *)(((wpt_byte *)pv) -
                                       sizeof(tPalDmaMemInfo));
     if(pv)
     { 
         pv = (wpt_byte *)pv - pMemInfo->offset;
-        dma_free_coherent(wcnss_device, pMemInfo->length, pv, pMemInfo->phyAddr);
+        dma_free_coherent(NULL, pMemInfo->length, pv, pMemInfo->phyAddr);
     }
 
 }/*wpalDmaMemoryFree*/
@@ -410,84 +424,27 @@ void wpalWlanReload(void)
 void wpalWcnssResetIntr(void)
 {
 #ifdef HAVE_WCNSS_RESET_INTR
-   wcnss_reset_fiq(true);
+   wcnss_reset_intr();
 #endif
    return;
 }
 
 /*---------------------------------------------------------------------------
-    wpalWcnssIsProntoHwVer3 -  Check if Pronto Hw ver3
-
-    Param:
-       None
-    Return:
-       TRUE if Ponto Hw Ver 3
-       Therefore use WQ6 instead of WQ23 for TX Low/High Priority Channel
----------------------------------------------------------------------------*/
-int wpalWcnssIsProntoHwVer3(void)
-{
-   return wcnss_is_hw_pronto_ver3();
-}
-
-/*---------------------------------------------------------------------------
-    wpalIsFwLoggingEnabled -  Check if Firmware will send logs using DXE
-
-    Param:
-       None
-    Return:
-        Check the documentation of vos_is_fw_logging_enabled
----------------------------------------------------------------------------*/
-wpt_uint8 wpalIsFwLoggingEnabled(void)
-{
-  return vos_is_fw_logging_enabled();
-}
-
-/*---------------------------------------------------------------------------
-    wpalIsFwLoggingEnabled -  Check if Firmware will send running
-                              logs using DXE
-
-    Param:
-       None
-    Return:
-        Check the documentation of vos_is_fw_logging_enabled
----------------------------------------------------------------------------*/
-wpt_uint8 wpalIsFwEvLoggingEnabled(void)
-{
-  return vos_is_fw_ev_logging_enabled();
-}
-/*---------------------------------------------------------------------------
-    wpalIsFwLoggingSupported -  Check if Firmware supports the fw->host
-                                logging infrastructure
-                                This API can only be called after fw caps
-                                are exchanged.
-
-    Param:
-       None
-    Return:
-        Check the documentation of vos_is_fw_logging_supported
----------------------------------------------------------------------------*/
-wpt_uint8 wpalIsFwLoggingSupported(void)
-{
-  return vos_is_fw_logging_supported();
-}
-
-/*---------------------------------------------------------------------------
     wpalFwDumpReq -  Trigger the dump commands to Firmware
-     
+
     Param:
-       cmd -   Command No. to execute
-       arg1 -  argument 1 to cmd
-       arg2 -  argument 2 to cmd
-       arg3 -  argument 3 to cmd
-       arg4 -  argument 4 to cmd
-       async -asynchronous event. Don't wait for completion.
+       cmd - Command No. to execute
+       arg1 - argument 1 to cmd
+       arg2 - argument 2 to cmd
+       arg3 - argument 3 to cmd
+       arg4 - argument 4 to cmd
     Return:
        NONE
 ---------------------------------------------------------------------------*/
 void wpalFwDumpReq(wpt_uint32 cmd, wpt_uint32 arg1, wpt_uint32 arg2,
-                    wpt_uint32 arg3, wpt_uint32 arg4, wpt_boolean async)
+                    wpt_uint32 arg3, wpt_uint32 arg4)
 {
-   vos_fwDumpReq(cmd, arg1, arg2, arg3, arg4, async);
+   vos_fwDumpReq(cmd, arg1, arg2, arg3, arg4);
    return;
 }
 
@@ -503,42 +460,19 @@ void wpalFwDumpReq(wpt_uint32 cmd, wpt_uint32 arg1, wpt_uint32 arg2,
 ---------------------------------------------------------------------------*/
 void wpalDevicePanic(void)
 {
-   BUG_ON(1);
+   BUG_ON(0);
    return;
 }
 /*---------------------------------------------------------------------------
-    wpalIslogPInProgress -  calls vos API vos_is_logp_in_progress()
+    wpalIsWDresetInProgress -  calls vos API isWDresetInProgress()
 
     Param:
        NONE
     Return:
        STATUS
  ---------------------------------------------------------------------------*/
-int  wpalIslogPInProgress(void)
+int  wpalIsWDresetInProgress(void)
 {
-   return vos_is_logp_in_progress(VOS_MODULE_ID_WDI, NULL);
-}
-
-/*---------------------------------------------------------------------------
-    wpalIsSsrPanicOnFailure -  calls vos API isSsrPanicOnFailure()
-
-    Param:
-       NONE
-    Return:
-       STATUS
- ---------------------------------------------------------------------------*/
-int  wpalIsSsrPanicOnFailure(void)
-{
-   return isSsrPanicOnFailure();
-}
-
-int  wpalGetDxeReplenishRXTimerVal(void)
-{
-   return vos_get_dxeReplenishRXTimerVal();
-}
-
-int  wpalIsDxeSSREnable(void)
-{
-   return vos_get_dxeSSREnable();
+   return isWDresetInProgress();
 }
 

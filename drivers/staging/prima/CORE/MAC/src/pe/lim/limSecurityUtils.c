@@ -1,5 +1,25 @@
 /*
- * Copyright (c) 2013-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -20,12 +40,7 @@
  */
 
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
-/*
+ * Airgo Networks, Inc proprietary. All rights reserved.
  * This file limUtils.cc contains the utility functions
  * LIM uses.
  * Author:        Chandra Modumudi
@@ -39,7 +54,7 @@
 #include "wniApi.h"
 
 #include "sirCommon.h"
-#include "wniCfg.h"
+#include "wniCfgSta.h"
 #include "cfgApi.h"
 
 
@@ -50,10 +65,6 @@
 
 
 #define LIM_SEED_LENGTH 16
-/**
- *preauth node timeout value in interval of 10msec
- */
-#define LIM_OPENAUTH_TIMEOUT 500
 
 /**
  * limIsAuthAlgoSupported()
@@ -215,7 +226,7 @@ limDeletePreAuthList(tpAniSirGlobal pMac)
     {
         pTempNode = pCurrNode->next;
 
-        limLog(pMac, LOG1, FL("=====> limDeletePreAuthList "));
+        PELOG1(limLog(pMac, LOG1, FL("=====> limDeletePreAuthList "));)
         limReleasePreAuthNode(pMac, pCurrNode);
 
         pCurrNode = pTempNode;
@@ -264,69 +275,7 @@ limSearchPreAuthList(tpAniSirGlobal pMac, tSirMacAddr macAddr)
     return pTempNode;
 } /*** end limSearchPreAuthList() ***/
 
-/**
- * limDeleteOpenAuthPreAuthNode
- *
- *FUNCTION:
- * This function is called to delete any stale preauth nodes on
- * receiving authentication frame and existing preauth nodes
- * reached the maximum allowed limit.
- *
- *LOGIC:
- *
- *ASSUMPTIONS:
- *
- *NOTE:
- *
- * @param  pMac - Pointer to Global MAC structure
- *
- * @return true if any preauthnode deleted else false
- */
 
-tANI_U8
-limDeleteOpenAuthPreAuthNode(tpAniSirGlobal pMac)
-{
-    struct tLimPreAuthNode    *pPrevNode, *pTempNode, *pFoundNode;
-    tANI_U8 authNodeFreed = false;
-
-    pTempNode = pPrevNode = pMac->lim.pLimPreAuthList;
-
-    if (pTempNode == NULL)
-        return authNodeFreed;
-
-    while (pTempNode != NULL)
-    {
-        if (pTempNode->mlmState == eLIM_MLM_AUTHENTICATED_STATE &&
-            pTempNode->authType == eSIR_OPEN_SYSTEM &&
-            (vos_timer_get_system_ticks() >
-                   (LIM_OPENAUTH_TIMEOUT + pTempNode->timestamp) ||
-             vos_timer_get_system_ticks() < pTempNode->timestamp))
-        {
-            // Found node to be deleted
-            authNodeFreed = true;
-            pFoundNode = pTempNode;
-            if (pMac->lim.pLimPreAuthList == pTempNode)
-            {
-                pPrevNode = pMac->lim.pLimPreAuthList = pTempNode =
-                                 pFoundNode->next;
-            }
-            else
-            {
-                pPrevNode->next = pTempNode->next;
-                pTempNode = pPrevNode->next;
-            }
-
-            limReleasePreAuthNode(pMac, pFoundNode);
-        }
-        else
-        {
-            pPrevNode = pTempNode;
-            pTempNode = pPrevNode->next;
-        }
-    }
-
-    return authNodeFreed;
-}
 
 /**
  * limAddPreAuthNode
@@ -431,11 +380,10 @@ limDeletePreAuthNode(tpAniSirGlobal pMac, tSirMacAddr macAddr)
         pMac->lim.pLimPreAuthList = pTempNode->next;
 
 
-        limLog(pMac, LOG1, FL(" first node to delete"));
-        limLog(pMac, LOG1,
-               FL(" Release data entry:%p idx %d peer: " MAC_ADDRESS_STR),
-                                         pTempNode, pTempNode->authNodeIdx,
-                                                   MAC_ADDR_ARRAY(macAddr));
+        PELOG1(limLog(pMac, LOG1, FL("=====> limDeletePreAuthNode : first node to delete"));)
+        PELOG1(limLog(pMac, LOG1, FL("Release data entry: %x id %d peer "),
+                        pTempNode, pTempNode->authNodeIdx);
+        limPrintMacAddr(pMac, macAddr, LOG1);)
         limReleasePreAuthNode(pMac, pTempNode);
 
         return;
@@ -453,10 +401,10 @@ limDeletePreAuthNode(tpAniSirGlobal pMac, tSirMacAddr macAddr)
 
             pPrevNode->next = pTempNode->next;
 
-            limLog(pMac, LOG1, FL(" subsequent node to delete"));
-            limLog(pMac, LOG1,
-                   FL("Release data entry: %p id %d peer: "MAC_ADDRESS_STR),
-                   pTempNode, pTempNode->authNodeIdx, MAC_ADDR_ARRAY(macAddr));
+            PELOG1(limLog(pMac, LOG1, FL("=====> limDeletePreAuthNode : subsequent node to delete"));
+            limLog(pMac, LOG1, FL("Release data entry: %x id %d peer "),
+                         pTempNode, pTempNode->authNodeIdx);
+            limPrintMacAddr(pMac, macAddr, LOG1);)
             limReleasePreAuthNode(pMac, pTempNode);
 
             return;
@@ -524,13 +472,8 @@ limRestoreFromAuthState(tpAniSirGlobal pMac, tSirResultCodes resultCode, tANI_U1
     sessionEntry->limMlmState = sessionEntry->limPrevMlmState;
     
     MTRACE(macTrace(pMac, TRACE_CODE_MLM_STATE, sessionEntry->peSessionId, sessionEntry->limMlmState));
-    /* Set the authAckStatus status flag as sucess as
-     * host have received the auth rsp and no longer auth
-     * retry is needed also cancel the auth rety timer
-     */
-    pMac->authAckStatus = LIM_AUTH_ACK_RCD_SUCCESS;
-    // 'Change' timer for future activations
-    limDeactivateAndChangeTimer(pMac, eLIM_AUTH_RETRY_TIMER);
+
+
     // 'Change' timer for future activations
     limDeactivateAndChangeTimer(pMac, eLIM_AUTH_FAIL_TIMER);
 
@@ -869,7 +812,6 @@ void limPostSmeSetKeysCnf( tpAniSirGlobal pMac,
 
 
   /// Free up buffer allocated for mlmSetKeysReq
-  vos_mem_zero(pMlmSetKeysReq, sizeof(tLimMlmSetKeysReq));
   vos_mem_free( pMlmSetKeysReq );
   pMac->lim.gpLimMlmSetKeysReq = NULL;
 
@@ -1133,18 +1075,9 @@ tANI_U32 val = 0;
       }else {
           /*This case the keys are coming from upper layer so need to fill the 
           * key at the default wep key index and send to the HAL */
-          if (defWEPIdx >= SIR_MAC_MAX_NUM_OF_DEFAULT_KEYS)
-          {
-             limLog( pMac, LOGE, FL("WEPIdx length %d more than "
-                                    "the Max limit, reset to Max"),defWEPIdx);
-             vos_mem_free (pSetStaKeyParams);
-             return;
-          }
           vos_mem_copy((tANI_U8 *) &pSetStaKeyParams->key[defWEPIdx],
-                                (tANI_U8 *) &pMlmSetKeysReq->key[0],
-                                  sizeof( pMlmSetKeysReq->key[0] ));
+                             (tANI_U8 *) &pMlmSetKeysReq->key[0], sizeof( pMlmSetKeysReq->key[0] ));
           pMlmSetKeysReq->numKeys = SIR_MAC_MAX_NUM_OF_DEFAULT_KEYS;
-
       }
       break;
   case eSIR_ED_TKIP:

@@ -1,5 +1,25 @@
 /*
- * Copyright (c) 2012-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ *
+ * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+ *
+ *
+ * Permission to use, copy, modify, and/or distribute this software for
+ * any purpose with or without fee is hereby granted, provided that the
+ * above copyright notice and this permission notice appear in all
+ * copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+ * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+ * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+/*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -19,11 +39,7 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
+
 
 /*
  * This file limLinkMonitoringAlgo.cc contains the code for
@@ -38,7 +54,7 @@
  */
 
 #include "aniGlobal.h"
-#include "wniCfg.h"
+#include "wniCfgSta.h"
 #include "cfgApi.h"
 
 
@@ -117,10 +133,7 @@ limDeleteStaContext(tpAniSirGlobal pMac, tpSirMsgQ limMsg)
         case HAL_DEL_STA_REASON_CODE_TIM_BASED:
              PELOGE(limLog(pMac, LOGE, FL(" Deleting station: staId = %d, reasonCode = %d"), pMsg->staId, pMsg->reasonCode);)
              if (eLIM_STA_IN_IBSS_ROLE == psessionEntry->limSystemRole)
-             {
-                 vos_mem_free(pMsg);
                  return;
-             }
 
              pStaDs = dphLookupAssocId(pMac, pMsg->staId, &pMsg->assocId, &psessionEntry->dph.dphHashTable);
 
@@ -144,29 +157,9 @@ limDeleteStaContext(tpAniSirGlobal pMac, tpSirMsgQ limMsg)
              if((eLIM_BT_AMP_AP_ROLE == psessionEntry->limSystemRole) ||
                      (eLIM_AP_ROLE == psessionEntry->limSystemRole))
              {
-                 limLog(pMac, LOG1, FL("SAP:lim Delete Station Context (staId: %d, assocId: %d) "),
-                             pMsg->staId, pMsg->assocId);
-                 /*
-                  * Check if Deauth/Disassoc is triggered from Host.
-                  * If mlmState is in some transient state then
-                  * don't trigger STA deletion to avoid the race
-                  * condition.
-                  */
-                  if ((pStaDs &&
-                      ((pStaDs->mlmStaContext.mlmState !=
-                        eLIM_MLM_LINK_ESTABLISHED_STATE) &&
-                       (pStaDs->mlmStaContext.mlmState !=
-                        eLIM_MLM_WT_ASSOC_CNF_STATE) &&
-                       (pStaDs->mlmStaContext.mlmState !=
-                        eLIM_MLM_ASSOCIATED_STATE))))
-                 {
-                     PELOGE(limLog(pMac, LOGE, FL("SAP:received Del STA context in some transit state(staId: %d, assocId: %d)"),
-                            pMsg->staId, pMsg->assocId);)
-                     vos_mem_free(pMsg);
-                     return;
-                 }
-                 else
-                     limTriggerSTAdeletion(pMac, pStaDs, psessionEntry);
+                 PELOG1(limLog(pMac, LOG1, FL("SAP:lim Delete Station Context (staId: %d, assocId: %d) "),
+                             pMsg->staId, pMsg->assocId);)
+                 limTriggerSTAdeletion(pMac, pStaDs, psessionEntry);
              }
              else
              {
@@ -187,53 +180,9 @@ limDeleteStaContext(tpAniSirGlobal pMac, tpSirMsgQ limMsg)
                     tLimMlmDeauthInd  mlmDeauthInd;
                     PELOGW(limLog(pMac, LOGW, FL("lim Delete Station Context (staId: %d, assocId: %d) "),
                                 pMsg->staId, pMsg->assocId);)
-                    if ((pStaDs &&
-                            ((pStaDs->mlmStaContext.mlmState !=
-                             eLIM_MLM_LINK_ESTABLISHED_STATE) &&
-                             (pStaDs->mlmStaContext.mlmState !=
-                             eLIM_MLM_WT_ASSOC_CNF_STATE) &&
-                             (pStaDs->mlmStaContext.mlmState !=
-                             eLIM_MLM_ASSOCIATED_STATE))))
-                    {
-                        /**
-                         * Received WDA_DELETE_STA_CONTEXT_IND for STA that does not
-                         * have context or in some transit state.
-                         * Log error
-                         */
-                         PELOGE(limLog(pMac, LOGE,
-                                FL("received WDA_DELETE_STA_CONTEXT_IND for STA that either has no context or in some transit state, Addr= "
-                                    MAC_ADDRESS_STR), MAC_ADDR_ARRAY(pMsg->bssId));)
-                         vos_mem_free(pMsg);
-                         return;
-                    }
 
-                    if( pMac->roam.configParam.sendDeauthBeforeCon )
-                    {
-                       tANI_U8 apCount = pMac->lim.gLimHeartBeatApMacIndex;
-
-                       if(pMac->lim.gLimHeartBeatApMacIndex)
-                          pMac->lim.gLimHeartBeatApMacIndex = 0;
-                       else
-                          pMac->lim.gLimHeartBeatApMacIndex = 1;
-
-                       limLog(pMac, LOG1, FL("lim Delete Station Context for MAC "
-                                          MAC_ADDRESS_STR" Store it on Index %d"),
-                                          MAC_ADDR_ARRAY(pStaDs->staAddr),apCount);
-
-                       sirCopyMacAddr(pMac->lim.gLimHeartBeatApMac[apCount],pStaDs->staAddr);
-                    }
-                    pStaDs->mlmStaContext.disassocReason =
-                        eSIR_MAC_DISASSOC_DUE_TO_INACTIVITY_REASON;
+                    pStaDs->mlmStaContext.disassocReason = eSIR_MAC_UNSPEC_FAILURE_REASON;
                     pStaDs->mlmStaContext.cleanupTrigger = eLIM_LINK_MONITORING_DEAUTH;
-
-                    if (pStaDs->isDisassocDeauthInProgress)
-                    {
-                        limLog(pMac, LOGE, FL("No need to cleanup as already"
-                               "disassoc or deauth in progress"));
-                        return;
-                    }
-                    else
-                        pStaDs->isDisassocDeauthInProgress++;
 
                     // Issue Deauth Indication to SME.
                     vos_mem_copy((tANI_U8 *) &mlmDeauthInd.peerMacAddr,
@@ -346,8 +295,7 @@ limTriggerSTAdeletion(tpAniSirGlobal pMac, tpDphHashNode pStaDs, tpPESession pse
     msgLength += sizeof(tSirMacAddr);
 
     //reasonCode 
-    limCopyU16((tANI_U8*)pBuf,
-            (tANI_U16)eSIR_MAC_DISASSOC_DUE_TO_INACTIVITY_REASON);
+    limCopyU16((tANI_U8*)pBuf, (tANI_U16)eLIM_LINK_MONITORING_DISASSOC);
     pBuf += sizeof(tANI_U16);
     msgLength += sizeof(tANI_U16);
 
@@ -435,27 +383,6 @@ limTearDownLinkWithAp(tpAniSirGlobal pMac, tANI_U8 sessionId, tSirMacReasonCodes
         vos_mem_copy((tANI_U8 *) &mlmDeauthInd.peerMacAddr,
                       pStaDs->staAddr,
                       sizeof(tSirMacAddr));
-        /* if sendDeauthBeforeCon is enabled and reasoncode is Beacon Missed
-         * Store the MAC of AP in the flip flop buffer. This MAC will be
-         * used to send Deauth before connection, if we connect to same AP
-         * after HB failure.
-         */
-        if(pMac->roam.configParam.sendDeauthBeforeCon &&
-            eSIR_BEACON_MISSED == reasonCode)
-        {
-           int apCount = pMac->lim.gLimHeartBeatApMacIndex;
-
-           if(pMac->lim.gLimHeartBeatApMacIndex)
-              pMac->lim.gLimHeartBeatApMacIndex = 0;
-           else
-              pMac->lim.gLimHeartBeatApMacIndex = 1;
-
-           limLog(pMac, LOGE, FL("HB Failure on MAC "
-                 MAC_ADDRESS_STR" Store it on Index %d"),
-                   MAC_ADDR_ARRAY(pStaDs->staAddr),apCount);
-
-           sirCopyMacAddr(pMac->lim.gLimHeartBeatApMac[apCount],pStaDs->staAddr);
-        }
         mlmDeauthInd.reasonCode    = (tANI_U8) pStaDs->mlmStaContext.disassocReason;
         mlmDeauthInd.deauthTrigger =  pStaDs->mlmStaContext.cleanupTrigger;
 
@@ -511,11 +438,8 @@ void limHandleHeartBeatFailure(tpAniSirGlobal pMac,tpPESession psessionEntry)
     /* Ensure HB Status for the session has been reseted */
     psessionEntry->LimHBFailureStatus = eANI_BOOLEAN_FALSE;
 
-    if (((psessionEntry->limSystemRole == eLIM_STA_ROLE)||
-         (psessionEntry->limSystemRole == eLIM_BT_AMP_STA_ROLE))&&
-         (psessionEntry->limMlmState == eLIM_MLM_LINK_ESTABLISHED_STATE)&&
-         (psessionEntry->limSmeState != eLIM_SME_WT_DISASSOC_STATE) &&
-         (psessionEntry->limSmeState != eLIM_SME_WT_DEAUTH_STATE))
+    if (((psessionEntry->limSystemRole == eLIM_STA_ROLE)||(psessionEntry->limSystemRole == eLIM_BT_AMP_STA_ROLE))&&
+         (psessionEntry->limMlmState == eLIM_MLM_LINK_ESTABLISHED_STATE))
     {
         if (!pMac->sys.gSysEnableLinkMonitorMode)
             return;
@@ -534,8 +458,6 @@ void limHandleHeartBeatFailure(tpAniSirGlobal pMac,tpPESession psessionEntry)
         {
             /*** Detected continuous Beacon Misses ***/
              psessionEntry->LimHBFailureStatus= eANI_BOOLEAN_TRUE;
-             /*Reset the HB packet count before sending probe*/
-             limResetHBPktCount(psessionEntry);
             /**
              * Send Probe Request frame to AP to see if
              * it is still around. Wait until certain
@@ -557,7 +479,7 @@ void limHandleHeartBeatFailure(tpAniSirGlobal pMac,tpPESession psessionEntry)
             }
             /* Connected on DFS channel so should not send the probe request
             * tear down the link directly */
-            limTearDownLinkWithAp(pMac, psessionEntry->peSessionId, eSIR_BEACON_MISSED);
+            limTearDownLinkWithAp(pMac, psessionEntry->peSessionId, eSIR_MAC_UNSPEC_FAILURE_REASON);
         }
     }
     else
@@ -568,8 +490,8 @@ void limHandleHeartBeatFailure(tpAniSirGlobal pMac,tpPESession psessionEntry)
             * or in states other than link-established state.
             * Log error.
             */
-        limLog(pMac, LOG1, FL("received heartbeat timeout in state %d"),
-               psessionEntry->limMlmState);
+        PELOG1(limLog(pMac, LOG1, FL("received heartbeat timeout in state %X"),
+               psessionEntry->limMlmState);)
         limPrintMlmState(pMac, LOG1, psessionEntry->limMlmState);
         pMac->lim.gLimHBfailureCntInOtherStates++;
         limReactivateHeartBeatTimer(pMac, psessionEntry);
