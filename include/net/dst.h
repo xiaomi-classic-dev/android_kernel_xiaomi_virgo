@@ -60,8 +60,6 @@ struct dst_entry {
 
 	unsigned short		pending_confirm;
 
-	unsigned short		pending_confirm;
-
 	short			error;
 	short			obsolete;
 	unsigned short		header_len;	/* more space at head required */
