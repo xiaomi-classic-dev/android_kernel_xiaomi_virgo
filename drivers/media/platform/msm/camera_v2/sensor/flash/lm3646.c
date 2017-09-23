@@ -41,11 +41,6 @@ static struct msm_camera_i2c_reg_array lm3646_off_array[] = {
 static struct msm_camera_i2c_reg_array lm3646_release_array[] = {
 };
 
-static struct msm_camera_i2c_reg_array lm3646_low_array[] = {
-	{0x07, 0x00}, //LED2 Max torch
-	{0x01, 0xE2}, //enable LED Torch
-};
-
 static struct msm_camera_i2c_reg_array lm3646_torch_array[] = {
 	{0x07, 0x40}, //LED1 90mA, LED2 90mA
 	{0x01, 0xE2}, //enable LED Torch
@@ -138,14 +133,6 @@ static struct msm_camera_i2c_reg_setting lm3646_release_setting = {
 	.delay = 0,
 };
 
-static struct msm_camera_i2c_reg_setting lm3646_low_setting = {
-	.reg_setting = lm3646_low_array,
-	.size = ARRAY_SIZE(lm3646_low_array),
-	.addr_type = MSM_CAMERA_I2C_BYTE_ADDR,
-	.data_type = MSM_CAMERA_I2C_BYTE_DATA,
-	.delay = 0,
-};
-
 static struct msm_camera_i2c_reg_setting lm3646_torch_setting = {
 	.reg_setting = lm3646_torch_array,
 	.size = ARRAY_SIZE(lm3646_torch_array),
@@ -165,7 +152,7 @@ static struct msm_camera_i2c_reg_setting lm3646_high_setting = {
 static struct msm_led_flash_reg_t lm3646_regs = {
 	.init_setting = &lm3646_init_setting,
 	.off_setting = &lm3646_off_setting,
-	.low_setting = &lm3646_low_setting,
+	.low_setting = &lm3646_torch_setting, //Hack for X5 dual led
 	.torch_setting = &lm3646_torch_setting,
 	.high_setting = &lm3646_high_setting,
 	.release_setting = &lm3646_release_setting,

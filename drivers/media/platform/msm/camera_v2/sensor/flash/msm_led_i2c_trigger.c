@@ -214,7 +214,8 @@ int msm_flash_led_low(struct msm_led_flash_ctrl_t *fctrl)
 
 	if (fctrl->flash_i2c_client && fctrl->reg_setting) {
 
-		fctrl->reg_setting->low_setting->reg_setting[0].reg_data = fctrl->flash_op_current[0];
+		//Hack for X5 dual led
+		fctrl->reg_setting->low_setting->reg_setting[0].reg_data = 27;
 
 		rc = fctrl->flash_i2c_client->i2c_func_tbl->i2c_write_table(
 			fctrl->flash_i2c_client,
@@ -222,7 +223,7 @@ int msm_flash_led_low(struct msm_led_flash_ctrl_t *fctrl)
 		if (rc < 0)
 			pr_err("%s:%d failed\n", __func__, __LINE__);
 		else
-			fctrl->torch_brightness = fctrl->flash_op_current[0] + 1;
+			fctrl->torch_brightness = 100;
 	}
 
 	return rc;
