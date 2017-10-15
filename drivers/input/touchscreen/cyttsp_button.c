@@ -93,6 +93,7 @@ struct cyttsp_button_data {
 	bool glove_mode;
 
 	u8 lockdown_info[CYTTSP_LOCKDOWN_INFO_SIZE];
+	bool keys_off;
 };
 
 static int cyttsp_i2c_recv(struct device *dev,
@@ -759,6 +760,10 @@ static irqreturn_t cyttsp_button_interrupt(int irq, void *dev_id)
 	u8 key;
 	unsigned long keystates;
 
+	if(data->keys_off) {
+		return IRQ_HANDLED;
+	}
+
 	if (data->enable) {
 		val = cyttsp_read_reg(data, CYTTSP_REG_TOUCHMODE);
 		if (val < 0) {
@@ -1115,13 +1120,46 @@ static ssize_t cyttsp_debug_enable_store(struct device *dev,
 	}
 }
 
+static ssize_t cyttsp_keys_off_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct cyttsp_button_data *data = dev_get_drvdata(dev);
+	int count;
+	char c;
+
+	c = data->keys_off ? '1' : '0';
+	count = sprintf(buf, "%c\n", c);
+
+	return count;
+}
+
+static ssize_t cyttsp_keys_off_store(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct cyttsp_button_data *data = dev_get_drvdata(dev);
+	int i;
+
+	if (sscanf(buf, "%u", &i) == 1 && i < 2) {
+		data->keys_off = (i == 1);
+
+		dev_dbg(dev, "%s\n", i ? "hw keys off" : "hw keys on");
+		return count;
+	} else {
+		dev_dbg(dev, "keys_off write error\n");
+		return -EINVAL;
+	}
+}
+
 static DEVICE_ATTR(firmware_update, S_IWUSR, NULL, cyttsp_firmware_update_store);
 static DEVICE_ATTR(debug_enable, S_IWUSR | S_IRUSR, cyttsp_debug_enable_show,
 			cyttsp_debug_enable_store);
+static DEVICE_ATTR(keys_off, S_IWUSR | S_IRUSR, cyttsp_keys_off_show,
+			cyttsp_keys_off_store);
 
 static struct attribute *cyttsp_attrs[] = {
 	&dev_attr_firmware_update.attr,
 	&dev_attr_debug_enable.attr,
+	&dev_attr_keys_off.attr,
 	NULL
 };
 
