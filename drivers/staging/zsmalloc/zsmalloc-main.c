@@ -653,6 +653,7 @@ static inline void __zs_cpu_down(struct mapping_area *area)
 	area->vm = NULL;
 }
 
+<<<<<<< HEAD
 static inline void *__zs_map_object(struct mapping_area *area,
 				struct page *pages[2], int off, int size)
 {
@@ -749,6 +750,8 @@ out:
 
 #endif /* USE_PGTABLE_MAPPING */
 
+=======
+>>>>>>> remotes/linux/linux-3.4.y
 static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
 				void *pcpu)
 {
@@ -838,6 +841,10 @@ struct zs_pool *zs_create_pool(gfp_t flags)
 	}
 
 	pool->flags = flags;
+<<<<<<< HEAD
+=======
+	pool->name = name;
+>>>>>>> remotes/linux/linux-3.4.y
 
 	return pool;
 }
