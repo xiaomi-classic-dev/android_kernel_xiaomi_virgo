@@ -232,4 +232,37 @@ static inline struct mux_div_clk *to_mux_div_clk(struct clk *clk)
 
 extern struct clk_ops clk_ops_mux_div_clk;
 
+/* ==================== GPIO controlled clock ==================== */
+
+struct gpio_clk_src {
+	int enable_gpio;
+	bool active_high;
+	unsigned long rate;
+};
+
+struct gpio_clk {
+	struct gpio_clk_src	*src;
+	size_t			num;
+	size_t			sel;
+	struct clk		c;
+};
+
+static inline struct gpio_clk *to_gpio_clk(struct clk *clk)
+{
+	return container_of(clk, struct gpio_clk, c);
+}
+
+extern struct clk_ops clk_ops_gpio_clk;
+
+#define DEFINE_GPIO_CLK(clk_name, clk_src) \
+static struct gpio_clk clk_name = {		\
+	.src = clk_src,				\
+	.num = ARRAY_SIZE(clk_src),		\
+	.c = {					\
+		.dbg_name = #clk_name,		\
+		.ops = &clk_ops_gpio_clk,	\
+		CLK_INIT(clk_name.c),		\
+	}					\
+}
+
 #endif

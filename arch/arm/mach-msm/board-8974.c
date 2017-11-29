@@ -28,6 +28,8 @@
 #include <asm/hardware/gic.h>
 #include <asm/mach/map.h>
 #include <asm/mach/arch.h>
+#include <asm/bootinfo.h>
+#include <mach/clock-generic.h>
 #include <mach/board.h>
 #include <mach/gpiomux.h>
 #include <mach/msm_iomap.h>
@@ -41,6 +43,7 @@
 #include <mach/rpm-regulator-smd.h>
 #include <mach/socinfo.h>
 #include <mach/msm_smem.h>
+#include <linux/firmware.h>
 #include "board-dt.h"
 #include "clock.h"
 #include "devices.h"
@@ -90,6 +93,15 @@ static void __init msm8974_early_memory(void)
  * into this category, and thus the driver should not be added here. The
  * EPROBE_DEFER can satisfy most dependency problems.
  */
+static struct gpio_clk_src hifi_osc_clk_src[] = {
+	{ .enable_gpio = 0,   .active_high = true, .rate = 49152000 },
+	{ .enable_gpio = 102, .active_high = true, .rate = 45158400 },
+};
+DEFINE_GPIO_CLK(hifi_osc_clk, hifi_osc_clk_src);
+
+static struct clk_lookup hifi_osc_clk_lookup =
+	CLK_LOOKUP("mclk", hifi_osc_clk.c, "1-0048");
+
 void __init msm8974_add_drivers(void)
 {
 	msm_smem_init();
@@ -104,6 +116,8 @@ void __init msm8974_add_drivers(void)
 		msm_clock_init(&msm8974_rumi_clock_init_data);
 	else
 		msm_clock_init(&msm8974_clock_init_data);
+	if (get_hw_version_major() == 5)
+		msm_clock_register(&hifi_osc_clk_lookup, 1);
 	tsens_tm_init_driver();
 	msm_thermal_device_init();
 }

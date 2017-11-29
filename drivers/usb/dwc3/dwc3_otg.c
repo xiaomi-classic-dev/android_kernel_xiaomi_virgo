@@ -552,7 +552,7 @@ static int dwc3_otg_set_power(struct usb_phy *phy, unsigned mA)
 			dotg->charger->chg_type == DWC3_PROPRIETARY_CHARGER)
 		power_supply_type = POWER_SUPPLY_TYPE_USB_DCP;
 	else
-		power_supply_type = POWER_SUPPLY_TYPE_UNKNOWN;
+		power_supply_type = POWER_SUPPLY_TYPE_USB;
 
 	power_supply_set_supply_type(dotg->psy, power_supply_type);
 
@@ -575,7 +575,7 @@ static int dwc3_otg_set_power(struct usb_phy *phy, unsigned mA)
 		if (power_supply_set_online(dotg->psy, false))
 			goto psy_error;
 		/* Set max current limit */
-		if (power_supply_set_current_limit(dotg->psy, 0))
+		if (power_supply_set_current_limit(dotg->psy, 1000*mA))
 			goto psy_error;
 	}
 
