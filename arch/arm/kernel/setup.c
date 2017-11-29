@@ -55,6 +55,7 @@
 #include <asm/traps.h>
 #include <asm/unwind.h>
 #include <asm/memblock.h>
+#include <asm/bootinfo.h>
 
 #if defined(CONFIG_DEPRECATED_PARAM_STRUCT)
 #include "compat.h"
@@ -679,6 +680,42 @@ static int __init parse_tag_mem32(const struct tag *tag)
 }
 
 __tagtable(ATAG_MEM, parse_tag_mem32);
+
+#ifdef CONFIG_OF_FLATTREE
+void __init early_init_dt_setup_pureason_arch(unsigned long pu_reason)
+{
+	set_powerup_reason(pu_reason);
+	pr_info("Powerup reason=0x%x\n", get_powerup_reason());
+}
+
+void __init early_init_dt_setup_hwversion_arch(unsigned long hw_version)
+{
+	set_hw_version(hw_version);
+	pr_info("Hw version=0x%x\n", get_hw_version());
+}
+
+void __init early_init_dt_setup_smeminfo_arch(unsigned long smem_info)
+{
+	unsigned int ddr_info;
+
+	switch (smem_info) {
+	case 0x01:
+		ddr_info = 0x01;
+		break;
+	case 0x03:
+		ddr_info = 0x03;
+		break;
+	case 0x06:
+		ddr_info = 0x02;
+		break;
+	default:
+		ddr_info = 0x04;
+		break;
+	}
+	pr_info("Smem info=0x%x\n", ddr_info);
+}
+
+#endif /* CONFIG_OF_FLATTREE */
 
 #if defined(CONFIG_VGA_CONSOLE) || defined(CONFIG_DUMMY_CONSOLE)
 struct screen_info screen_info = {

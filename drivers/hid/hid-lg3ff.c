@@ -2,6 +2,7 @@
  *  Force feedback support for Logitech Flight System G940
  *
  *  Copyright (c) 2009 Gary Stein <LordCnidarian@gmail.com>
+ *  Copyright (C) 2017 XiaoMi, Inc.
  */
 
 /*
@@ -22,10 +23,8 @@
 
 
 #include <linux/input.h>
-#include <linux/usb.h>
 #include <linux/hid.h>
 
-#include "usbhid/usbhid.h"
 #include "hid-lg.h"
 
 /*
@@ -93,7 +92,7 @@ static int hid_lg3ff_play(struct input_dev *dev, void *data,
 		report->field[0]->value[1] = (unsigned char)(-x);
 		report->field[0]->value[31] = (unsigned char)(-y);
 
-		usbhid_submit_report(hid, report, USB_DIR_OUT);
+		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
 		break;
 	}
 	return 0;
@@ -119,7 +118,7 @@ static void hid_lg3ff_set_autocenter(struct input_dev *dev, u16 magnitude)
 	report->field[0]->value[33] = 0x7F;
 	report->field[0]->value[34] = 0x7F;
 
-	usbhid_submit_report(hid, report, USB_DIR_OUT);
+	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
 }
 
 

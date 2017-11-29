@@ -6,7 +6,8 @@
  * to work on raw hid events as they want to, and avoids a need to
  * use a transport-specific userspace libhid/libusb libraries.
  *
- *  Copyright (c) 2007 Jiri Kosina
+ * Copyright (c) 2007 Jiri Kosina
+ * Copyright (C) 2017 XiaoMi, Inc.
  */
 
 /*
@@ -57,16 +58,16 @@ static ssize_t hidraw_read(struct file *file, char __user *buffer, size_t count,
 			set_current_state(TASK_INTERRUPTIBLE);
 
 			while (list->head == list->tail) {
-				if (file->f_flags & O_NONBLOCK) {
-					ret = -EAGAIN;
-					break;
-				}
 				if (signal_pending(current)) {
 					ret = -ERESTARTSYS;
 					break;
 				}
 				if (!list->hidraw->exist) {
 					ret = -EIO;
+					break;
+				}
+				if (file->f_flags & O_NONBLOCK) {
+					ret = -EAGAIN;
 					break;
 				}
 
@@ -108,7 +109,7 @@ out:
  * This function is to be called with the minors_lock mutex held */
 static ssize_t hidraw_send_report(struct file *file, const char __user *buffer, size_t count, unsigned char report_type)
 {
-	unsigned int minor = iminor(file->f_path.dentry->d_inode);
+	unsigned int minor = iminor(file_inode(file));
 	struct hid_device *dev;
 	__u8 *buf;
 	int ret = 0;
@@ -176,7 +177,7 @@ static ssize_t hidraw_write(struct file *file, const char __user *buffer, size_t
  *  mutex held. */
 static ssize_t hidraw_get_report(struct file *file, char __user *buffer, size_t count, unsigned char report_type)
 {
-	unsigned int minor = iminor(file->f_path.dentry->d_inode);
+	unsigned int minor = iminor(file_inode(file));
 	struct hid_device *dev;
 	__u8 *buf;
 	int ret = 0, len;
@@ -295,6 +296,13 @@ out:
 
 }
 
+static int hidraw_fasync(int fd, struct file *file, int on)
+{
+	struct hidraw_list *list = file->private_data;
+
+	return fasync_helper(fd, file, on, &list->fasync);
+}
+
 static void drop_ref(struct hidraw *hidraw, int exists_bit)
 {
 	if (exists_bit) {
@@ -332,7 +340,7 @@ static int hidraw_release(struct inode * inode, struct file * file)
 static long hidraw_ioctl(struct file *file, unsigned int cmd,
 							unsigned long arg)
 {
-	struct inode *inode = file->f_path.dentry->d_inode;
+	struct inode *inode = file_inode(file);
 	unsigned int minor = iminor(inode);
 	long ret = 0;
 	struct hidraw *dev;
@@ -437,6 +445,7 @@ static const struct file_operations hidraw_ops = {
 	.open =         hidraw_open,
 	.release =      hidraw_release,
 	.unlocked_ioctl = hidraw_ioctl,
+	.fasync =	hidraw_fasync,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl   = hidraw_ioctl,
 #endif
@@ -509,7 +518,6 @@ int hidraw_connect(struct hid_device *hid)
 		goto out;
 	}
 
-	mutex_unlock(&minors_lock);
 	init_waitqueue_head(&dev->wait);
 	INIT_LIST_HEAD(&dev->list);
 
@@ -519,6 +527,7 @@ int hidraw_connect(struct hid_device *hid)
 	dev->exist = 1;
 	hid->hidraw = dev;
 
+	mutex_unlock(&minors_lock);
 out:
 	return result;
 
@@ -563,6 +572,7 @@ int __init hidraw_init(void)
 	if (result < 0)
 		goto error_class;
 
+	printk(KERN_INFO "hidraw: raw HID events driver (C) Jiri Kosina\n");
 out:
 	return result;
 

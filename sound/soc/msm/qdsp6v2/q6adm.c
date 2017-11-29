@@ -1256,8 +1256,8 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 					channel_mode);
 			return -EINVAL;
 		}
-		if ((open.dev_num_channel > 2) &&
-			multi_ch_map.set_channel_map)
+		if (((open.dev_num_channel > 2) &&
+			multi_ch_map.set_channel_map) && !(open.topology_id == 0x14F96 || open.topology_id == 0x14F94))
 			memcpy(open.dev_channel_mapping,
 				multi_ch_map.channel_mapping,
 				PCM_FORMAT_MAX_NUM_CHANNEL);

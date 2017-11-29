@@ -154,5 +154,6 @@ extern void taiko_event_register(
 	int (*machine_event_cb)(struct snd_soc_codec *codec,
 				enum wcd9xxx_codec_event),
 	struct snd_soc_codec *codec);
+extern void taiko_hs_enable_vddio(struct snd_soc_codec *codec, bool on);
 
 #endif

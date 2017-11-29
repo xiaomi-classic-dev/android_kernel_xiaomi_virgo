@@ -77,6 +77,7 @@ static int dload_set(const char *val, struct kernel_param *kp);
 static int download_mode = 1;
 module_param_call(download_mode, dload_set, param_get_int,
 			&download_mode, 0644);
+
 static int panic_prep_restart(struct notifier_block *this,
 			      unsigned long event, void *ptr)
 {

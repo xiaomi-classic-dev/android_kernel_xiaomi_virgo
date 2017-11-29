@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1539,6 +1539,15 @@ static int msm_dai_q6_mi2s_hw_params(struct snd_pcm_substream *substream,
 	struct msm_dai_q6_dai_data *dai_data = &mi2s_dai_config->mi2s_dai_data;
 	struct afe_param_id_i2s_cfg *i2s = &dai_data->port_config.i2s;
 
+	pr_info("%s: dai id %d dai_data->channels = %d\n"
+			"sample_rate = %u i2s_cfg_minor_version = %#x\n"
+			"bit_width = %hu  channel_mode = %#x mono_stereo = %#x\n"
+			"ws_src = %#x sample_rate = %u data_format = %#x\n"
+			"reserved = %u\n", __func__, dai->id, dai_data->channels,
+				dai_data->rate, i2s->i2s_cfg_minor_version, i2s->bit_width,
+				i2s->channel_mode, i2s->mono_stereo, i2s->ws_src,
+				i2s->sample_rate, i2s->data_format, i2s->reserved);
+
 	dai_data->channels = params_channels(params);
 	switch (dai_data->channels) {
 	case 8:
@@ -1746,18 +1755,18 @@ static struct snd_soc_dai_ops msm_dai_q6_mi2s_ops = {
 /* Channel min and max are initialized base on platform data */
 static struct snd_soc_dai_driver msm_dai_q6_mi2s_dai = {
 	.playback = {
-		.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
-		SNDRV_PCM_RATE_16000,
-		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+		.rates = SNDRV_PCM_RATE_192000 | SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
+		SNDRV_PCM_RATE_16000 | SNDRV_PCM_RATE_44100,
+		.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE,
 		.rate_min =     8000,
-		.rate_max =     48000,
+		.rate_max =     192000,
 	},
 	.capture = {
-		.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
+		.rates = SNDRV_PCM_RATE_192000 | SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_8000 |
 		SNDRV_PCM_RATE_16000,
 		.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE,
 		.rate_min =     8000,
-		.rate_max =     48000,
+		.rate_max =     192000,
 	},
 	.ops = &msm_dai_q6_mi2s_ops,
 	.probe = msm_dai_q6_dai_mi2s_probe,

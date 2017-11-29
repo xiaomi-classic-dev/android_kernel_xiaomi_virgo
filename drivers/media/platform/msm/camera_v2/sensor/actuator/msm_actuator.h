@@ -55,6 +55,8 @@ struct msm_actuator_func_tbl {
 			int16_t);
 	int32_t (*actuator_set_position)(struct msm_actuator_ctrl_t *,
 		struct msm_actuator_set_position_t *);
+	int32_t (*actuator_set_cam_mode)(struct msm_actuator_ctrl_t *,
+		actuator_cam_mode_t);
 };
 
 struct msm_actuator {

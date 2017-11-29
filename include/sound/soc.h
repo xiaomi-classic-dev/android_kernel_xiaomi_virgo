@@ -882,6 +882,7 @@ struct snd_soc_card {
 	struct mutex dapm_power_mutex;
 	struct mutex dsp_mutex;
 	spinlock_t dsp_spinlock;
+	int version;
 
 	bool instantiated;
 
