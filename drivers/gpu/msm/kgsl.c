@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2014,2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2014,2016-2017, The Linux Foundation. All rights reserved.
  * Copyright (C) 2017 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -368,7 +368,7 @@ kgsl_mem_entry_untrack_gpuaddr(struct kgsl_process_private *process,
 }
 
 static void kgsl_mem_entry_commit_mem_list(struct kgsl_process_private *process,
-		struct kgsl_mem_entry *entry)
+				struct kgsl_mem_entry *entry)
 {
 	struct rb_node **node;
 	struct rb_node *parent = NULL;
@@ -395,7 +395,7 @@ static void kgsl_mem_entry_commit_mem_list(struct kgsl_process_private *process,
 }
 
 static void kgsl_mem_entry_commit_process(struct kgsl_process_private *process,
-		struct kgsl_mem_entry *entry)
+				struct kgsl_mem_entry *entry)
 {
 	if (!entry)
 		return;
@@ -1614,7 +1614,7 @@ void kgsl_dump_syncpoints(struct kgsl_device *device,
 		}
 		case KGSL_CMD_SYNCPOINT_TYPE_FENCE:
 			if (event->handle)
-				dev_err(device->dev, "  fence: [%p] %s\n",
+				dev_err(device->dev, "  fence: [%pK] %s\n",
 					event->handle->fence,
 					event->handle->name);
 			else
@@ -4385,9 +4385,8 @@ int kgsl_device_platform_probe(struct kgsl_device *device)
 	disable_irq(device->pwrctrl.interrupt_num);
 
 	KGSL_DRV_INFO(device,
-		"dev_id %d regs phys 0x%08lx size 0x%08x virt %p\n",
-		device->id, device->reg_phys, device->reg_len,
-		device->reg_virt);
+		"dev_id %d regs phys 0x%08lx size 0x%08x\n",
+		device->id, device->reg_phys, device->reg_len);
 
 	rwlock_init(&device->context_lock);
 
