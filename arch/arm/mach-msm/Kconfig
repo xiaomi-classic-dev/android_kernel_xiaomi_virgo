@@ -3054,12 +3054,6 @@ config KRAIT_REGULATOR
 	 regulators running in ganged mode inside the PMIC. Enable
 	 this option to support such configurations.
 
-config FASTBOOT_ENABLE
-	bool "Enable fastboot"
-	default n
-	help
-	  just enable fastboot mode in eng build
-
 endif
 
 config KERNEL_TEXT_MPU_PROT
