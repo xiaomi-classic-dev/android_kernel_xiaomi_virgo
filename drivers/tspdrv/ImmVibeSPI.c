@@ -440,6 +440,10 @@
 
 #define MAX_REVISION_STRING_SIZE 10
 
+#define	MAX_VIBE_STRENGTH		0x7f
+#define	MIN_VIBE_STRENGTH		0x0C
+#define	DEF_VIBE_STRENGTH		MAX_VIBE_STRENGTH
+
 static int g_nDeviceID = -1;
 static struct i2c_client *g_pTheClient;
 static bool g_bAmpEnabled;
@@ -466,6 +470,8 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_Device_GetParamFileId(void) {
 	else
 		return 0;
 }
+
+static int vibe_strength = DEF_VIBE_STRENGTH;
 
 struct pwm_device {
 	struct list_head node;
@@ -743,8 +749,75 @@ static void drv2604_change_mode(char mode)
 	unsigned char tmp[] = {MODE_REG, mode};
 
 	drv2604_write_reg_val(tmp, sizeof(tmp));;
-
 }
+
+static ssize_t drv2604_vib_min_show(struct device *dev,
+                                    struct device_attribute *attr, char *buf)
+{
+    return scnprintf(buf, PAGE_SIZE, "%d\n", MIN_VIBE_STRENGTH);
+}
+
+static ssize_t drv2604_vib_max_show(struct device *dev,
+                                    struct device_attribute *attr, char *buf)
+{
+    return scnprintf(buf, PAGE_SIZE, "%d\n", MAX_VIBE_STRENGTH);
+}
+
+static ssize_t drv2604_vib_default_show(struct device *dev,
+                                        struct device_attribute *attr, char *buf)
+{
+    return scnprintf(buf, PAGE_SIZE, "%d\n", DEF_VIBE_STRENGTH);
+}
+
+static ssize_t drv2604_vib_level_show(struct device *dev,
+                                      struct device_attribute *attr, char *buf)
+{
+    return scnprintf(buf, PAGE_SIZE, "%d\n", vibe_strength);
+}
+
+static ssize_t drv2604_vib_level_store(struct device *dev,
+                                       struct device_attribute *attr,
+                                       const char *buf, size_t count)
+{
+    int rc, val;
+    
+    rc = kstrtoint(buf, 10, &val);
+    if (rc) {
+        pr_err("%s: error getting level\n", __func__);
+        return -EINVAL;
+    }
+    
+    if (val < MIN_VIBE_STRENGTH) {
+        pr_err("%s: level %d not in range (%d - %d), using min.\n",
+               __func__, val, MIN_VIBE_STRENGTH, MAX_VIBE_STRENGTH);
+        val = MIN_VIBE_STRENGTH;
+    } else if (val > MAX_VIBE_STRENGTH) {
+        pr_err("%s: level %d not in range (%d - %d), using max.\n",
+               __func__, val, MIN_VIBE_STRENGTH, MAX_VIBE_STRENGTH);
+        val = MAX_VIBE_STRENGTH;
+    }
+    
+    vibe_strength = val;
+    
+    return strnlen(buf, count);
+}
+
+static DEVICE_ATTR(vtg_min, S_IRUGO, drv2604_vib_min_show, NULL);
+static DEVICE_ATTR(vtg_max, S_IRUGO, drv2604_vib_max_show, NULL);
+static DEVICE_ATTR(vtg_default, S_IRUGO, drv2604_vib_default_show, NULL);
+static DEVICE_ATTR(vtg_level, S_IRUGO | S_IWUSR, drv2604_vib_level_show, drv2604_vib_level_store);
+
+static struct attribute *timed_dev_attrs[] = {
+    &dev_attr_vtg_min.attr,
+    &dev_attr_vtg_max.attr,
+    &dev_attr_vtg_default.attr,
+    &dev_attr_vtg_level.attr,
+    NULL,
+};
+
+static struct attribute_group timed_dev_attr_group = {
+    .attrs = timed_dev_attrs,
+};
 
 /* - Xiaomi - timed output interface -------------------------------------------------------------------------------- */
 #define YES 1
@@ -802,7 +875,7 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 			/* Only change the mode if not already in RTP mode; RTP input already set at init */
 			if (mode != MODE_REAL_TIME_PLAYBACK) {
 				drv2604_change_mode(MODE_REAL_TIME_PLAYBACK);
-				drv2604_set_rtp_val(REAL_TIME_PLAYBACK_CALIBRATION_STRENGTH);
+				drv2604_set_rtp_val(vibe_strength);
 				vibrator_is_playing = YES;
 				g_bAmpEnabled = true;
 			}
@@ -1262,6 +1335,11 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 		printk(KERN_ALERT"drv2604: fail to create timed output dev: pattern\n");
 		return VIBE_E_FAIL;
 	}
+    
+    if (sysfs_create_group(&to_dev.dev->kobj, &timed_dev_attr_group)) {
+        printk(KERN_ALERT"drv2604: fail to create strength tunables\n");
+        return VIBE_E_FAIL;
+    }
 
 	hrtimer_init(&vibdata.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	vibdata.timer.function = vibrator_timer_func;
