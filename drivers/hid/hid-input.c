@@ -320,6 +320,11 @@ static const struct hid_device_id hid_battery_quirks[] = {
 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
 			USB_DEVICE_ID_APPLE_ALU_WIRELESS_ANSI),
 			HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
+			       USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI),
+	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
+		USB_DEVICE_ID_APPLE_ALU_WIRELESS_ANSI),
+	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
 	{}
 };
 
@@ -360,8 +365,9 @@ static int hidinput_get_battery_property(struct power_supply *psy,
 					      buf, 2,
 					      dev->battery_report_type);
 
-		if (ret != 2) {
-			ret = -ENODATA;
+			if (ret >= 0)
+				ret = -EINVAL;
+
 			kfree(buf);
 			break;
 		}
