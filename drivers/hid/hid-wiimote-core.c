@@ -1658,19 +1658,19 @@ static ssize_t wiimote_ext_show(struct device *dev,
 
 	switch (type) {
 	case WIIMOTE_EXT_NONE:
-		return snprintf(buf, "none\n");
+		return sprintf(buf, "none\n");
 	case WIIMOTE_EXT_NUNCHUK:
-		return snprintf(buf, "nunchuk\n");
+		return sprintf(buf, "nunchuk\n");
 	case WIIMOTE_EXT_CLASSIC_CONTROLLER:
-		return snprintf(buf, "classic\n");
+		return sprintf(buf, "classic\n");
 	case WIIMOTE_EXT_BALANCE_BOARD:
-		return snprintf(buf, "balanceboard\n");
+		return sprintf(buf, "balanceboard\n");
 	case WIIMOTE_EXT_PRO_CONTROLLER:
-		return snprintf(buf, "procontroller\n");
+		return sprintf(buf, "procontroller\n");
 	case WIIMOTE_EXT_UNKNOWN:
 		/* fallthrough */
 	default:
-		return snprintf(buf, "unknown\n");
+		return sprintf(buf, "unknown\n");
 	}
 }
 
@@ -1706,21 +1706,21 @@ static ssize_t wiimote_dev_show(struct device *dev,
 
 	switch (type) {
 	case WIIMOTE_DEV_GENERIC:
-		return snprintf(buf, "generic\n");
+		return sprintf(buf, "generic\n");
 	case WIIMOTE_DEV_GEN10:
-		return snprintf(buf, "gen10\n");
+		return sprintf(buf, "gen10\n");
 	case WIIMOTE_DEV_GEN20:
-		return snprintf(buf, "gen20\n");
+		return sprintf(buf, "gen20\n");
 	case WIIMOTE_DEV_BALANCE_BOARD:
-		return snprintf(buf, "balanceboard\n");
+		return sprintf(buf, "balanceboard\n");
 	case WIIMOTE_DEV_PRO_CONTROLLER:
-		return snprintf(buf, "procontroller\n");
+		return sprintf(buf, "procontroller\n");
 	case WIIMOTE_DEV_PENDING:
-		return snprintf(buf, "pending\n");
+		return sprintf(buf, "pending\n");
 	case WIIMOTE_DEV_UNKNOWN:
 		/* fallthrough */
 	default:
-		return snprintf(buf, "unknown\n");
+		return sprintf(buf, "unknown\n");
 	}
 }
 
