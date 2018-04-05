@@ -1,4 +1,4 @@
-vers/hid/hid-multitouch.c/*
+/*
  *  HID driver for multitouch panels
  *
  *  Copyright (c) 2010-2012 Stephane Chatty <chatty@enac.fr>
