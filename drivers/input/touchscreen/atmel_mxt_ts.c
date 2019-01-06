@@ -13,6 +13,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/proc_fs.h>
 #include <linux/init.h>
 #include <linux/delay.h>
 #include <linux/firmware.h>
@@ -595,7 +596,7 @@ struct mxt_data {
 	bool init_complete;
 	bool use_last_golden;
 	struct mutex golden_mutex;
-
+	bool button_0d_enabled;
 
 	/* Slowscan parameters	*/
 	int slowscan_enabled;
@@ -1715,6 +1716,9 @@ static void mxt_proc_t15_messages(struct mxt_data *data, u8 *msg)
 	bool sync = false;
 	unsigned long keystates = le32_to_cpu(msg[2]);
 	int index = data->current_index;
+
+	if(!data->button_0d_enabled)
+		return;
 
 	for (key = 0; key < pdata->config_array[index].key_num; key++) {
 		curr_state = test_bit(key, &data->keystatus);
@@ -3086,6 +3090,8 @@ static int mxt_initialize(struct mxt_data *data)
 	struct mxt_info *info = &data->info;
 	int error;
 	u8 retry_count = 0;
+
+	data->button_0d_enabled = true;
 
 retry_probe:
 	/* Read info block */
@@ -4740,6 +4746,33 @@ static ssize_t mxt_mem_access_write(struct file *filp, struct kobject *kobj,
 	return ret == 0 ? count : 0;
 }
 
+static ssize_t mxt_0dbutton_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct mxt_data *data = dev_get_drvdata(dev);
+	return snprintf(buf, PAGE_SIZE, "%u\n",
+			data->button_0d_enabled);
+}
+
+static ssize_t mxt_0dbutton_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+
+	unsigned int input;
+	struct mxt_data *data = dev_get_drvdata(dev);
+
+	if (sscanf(buf, "%u", &input) != 1)
+		return -EINVAL;
+
+	input = input > 0 ? 1 : 0;
+
+	dev_info(dev, "%s: input %d\n", __func__, input);
+
+	data->button_0d_enabled = input;
+
+	return count;
+}
+
 static DEVICE_ATTR(update_fw, S_IWUSR | S_IRUSR, mxt_update_fw_show, mxt_update_fw_store);
 static DEVICE_ATTR(debug_enable, S_IWUSR | S_IRUSR, mxt_debug_enable_show,
 			mxt_debug_enable_store);
@@ -4759,6 +4792,7 @@ static DEVICE_ATTR(diagnostic, S_IWUSR | S_IRUSR, mxt_diagnostic_show, mxt_diagn
 static DEVICE_ATTR(sensitive_mode, S_IWUSR | S_IRUSR, mxt_sensitive_mode_show, mxt_sensitive_mode_store);
 static DEVICE_ATTR(chip_reset, S_IWUSR, NULL, mxt_chip_reset_store);
 static DEVICE_ATTR(chg_state, S_IRUGO, mxt_chg_state_show, NULL);
+static DEVICE_ATTR(nav_button_enable, S_IRUGO | S_IWUGO, mxt_0dbutton_show, mxt_0dbutton_store);
 
 static struct attribute *mxt_attrs[] = {
 	&dev_attr_update_fw.attr,
@@ -4777,12 +4811,47 @@ static struct attribute *mxt_attrs[] = {
 	&dev_attr_sensitive_mode.attr,
 	&dev_attr_chip_reset.attr,
 	&dev_attr_chg_state.attr,
+	&dev_attr_nav_button_enable.attr,
 	NULL
 };
 
 static const struct attribute_group mxt_attr_group = {
 	.attrs = mxt_attrs,
 };
+
+static int mxt_proc_init(struct kobject *sysfs_node_parent) {
+	int ret = 0;
+	char *driver_path;
+
+	struct proc_dir_entry *proc_entry_ts;
+
+	// allocate memory for input device path
+	driver_path = kzalloc(PATH_MAX, GFP_KERNEL);
+	if(!driver_path) {
+		ret = -ENOMEM;
+		pr_err("%s: failed to allocate memory\n", __func__);
+		goto exit;
+	}
+
+	// store input device path
+	sprintf(driver_path, "/sys%s",
+			kobject_get_path(sysfs_node_parent, GFP_KERNEL));
+
+	pr_debug("%s: driver_path:%s\n", __func__, driver_path);
+
+	// symlink /proc/touchscreen to input device
+	proc_entry_ts = proc_symlink("touchscreen", NULL, driver_path);
+	if (!proc_entry_ts) {
+		ret = -ENOMEM;
+		pr_err("%s: failed to symlink to touchscreen\n", __func__);
+		goto free_driver_path;
+	}
+
+free_driver_path:
+	kfree(driver_path);
+exit:
+	return ret;
+}
 
 static bool mxt_read_and_check_calib_msg(struct mxt_data *data)
 {
@@ -5708,6 +5777,8 @@ static int __devinit mxt_probe(struct i2c_client *client,
 			error);
 		goto err_free_irq;
 	}
+
+	mxt_proc_init(&client->dev.kobj);
 
 	sysfs_bin_attr_init(&data->mem_access_attr);
 	data->mem_access_attr.attr.name = "mem_access";
