@@ -32,11 +32,7 @@
 #include <linux/regulator/machine.h>
 #include <linux/of_batterydata.h>
 #include <linux/qpnp-revid.h>
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-#include <linux/alarmtimer.h>
-#else
 #include <linux/android_alarm.h>
-#endif
 #include <linux/spinlock.h>
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
@@ -1387,22 +1383,13 @@ qpnp_bat_if_adc_disable_work(struct work_struct *work)
 	qpnp_adc_tm_disable_chan_meas(chip->adc_tm_dev, &chip->adc_param);
 }
 
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-#define POWER_STAGE_REDUCE_CHECK_PERIOD_NS      (20LL * NSEC_PER_SEC)
-#else
-#define POWER_STAGE_REDUCE_CHECK_PERIOD_SECONDS		20
-#endif
 #define EOC_CHECK_PERIOD_MS	10000
 #define THERMAL_MONITOR_INTVAL_SEC	20
 static irqreturn_t
 qpnp_chg_vbatdet_lo_irq_handler(int irq, void *_chip)
 {
 	struct qpnp_chg_chip *chip = _chip;
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-	ktime_t kt;
-#else
-  	struct timespec ts;
-#endif
+	struct timespec ts;
 	u8 chg_sts = 0;
 	int rc;
 
@@ -1418,16 +1405,10 @@ qpnp_chg_vbatdet_lo_irq_handler(int irq, void *_chip)
 			msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
 		if (get_hw_version_major() == 4 ||
 				get_hw_version_major() == 5) {
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-				kt = ns_to_ktime(POWER_STAGE_REDUCE_CHECK_PERIOD_NS);
-				alarm_start_relative(&chip->reduce_power_stage_alarm, kt);
-#else
-				getnstimeofday(&ts);
-				ts.tv_sec += THERMAL_MONITOR_INTVAL_SEC;
-				alarm_start_range(&chip->thermal_monitor_alarm,
-					timespec_to_ktime(ts),
-					timespec_to_ktime(ts));
-#endif
+			getnstimeofday(&ts);
+			ts.tv_sec += THERMAL_MONITOR_INTVAL_SEC;
+			alarm_start_range(&chip->thermal_monitor_alarm,
+				timespec_to_ktime(ts), timespec_to_ktime(ts));
 			last_thermal_level = chip->thermal_levels - 1;
 		}
 		pm_stay_awake(chip->dev);
@@ -1754,11 +1735,6 @@ qpnp_chg_regulator_batfet_set(struct qpnp_chg_chip *chip, bool enable)
 	return rc;
 }
 
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-#define POWER_STAGE_REDUCE_CHECK_PERIOD_NS      (20LL * NSEC_PER_SEC)
-#else
-#define POWER_STAGE_REDUCE_CHECK_PERIOD_SECONDS		20
-#endif
 #define USB_WALL_THRESHOLD_MA	500
 #define ENUM_T_STOP_BIT		BIT(0)
 #define USB_5V_UV	5000000
@@ -1769,11 +1745,7 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 	struct qpnp_chg_chip *chip = _chip;
 	int usb_present, host_mode, usbin_health;
 	u8 psy_health_sts;
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-	ktime_t kt;
-#else
-  	struct timespec ts;
-#endif
+	struct timespec ts;
 
 	usb_present = qpnp_chg_is_usb_chg_plugged_in(chip);
 	host_mode = qpnp_chg_is_otg_en_set(chip);
@@ -1855,16 +1827,11 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 
 			if (get_hw_version_major() == 4 ||
 					get_hw_version_major() == 5) {
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-				kt = ns_to_ktime(POWER_STAGE_REDUCE_CHECK_PERIOD_NS);
-				alarm_start_relative(&chip->reduce_power_stage_alarm, kt);
-#else
 				getnstimeofday(&ts);
 				ts.tv_sec += THERMAL_MONITOR_INTVAL_SEC;
 				alarm_start_range(&chip->thermal_monitor_alarm,
 					timespec_to_ktime(ts),
 					timespec_to_ktime(ts));
-#endif
 				last_thermal_level = chip->thermal_levels - 1;
 			}
 
@@ -2177,20 +2144,11 @@ bypass_vbatdet_comp(struct qpnp_chg_chip *chip, bool bypass)
 	return rc;
 }
 
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-#define POWER_STAGE_REDUCE_CHECK_PERIOD_NS      (20LL * NSEC_PER_SEC)
-#else
-#define POWER_STAGE_REDUCE_CHECK_PERIOD_SECONDS		20
-#endif
 static irqreturn_t
 qpnp_chg_chgr_chg_fastchg_irq_handler(int irq, void *_chip)
 {
 	struct qpnp_chg_chip *chip = _chip;
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-	ktime_t kt;
-#else
-  	struct timespec ts;
-#endif
+	struct timespec ts;
 	bool fastchg_on = false;
 
 	fastchg_on = qpnp_chg_is_fastchg_on(chip);
@@ -2230,17 +2188,12 @@ qpnp_chg_chgr_chg_fastchg_irq_handler(int irq, void *_chip)
 					msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
 				if (get_hw_version_major() == 4 ||
 						get_hw_version_major() == 5) {
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-					kt = ns_to_ktime(POWER_STAGE_REDUCE_CHECK_PERIOD_NS);
-					alarm_start_relative(&chip->reduce_power_stage_alarm, kt);
-#else
 					getnstimeofday(&ts);
 					ts.tv_sec += THERMAL_MONITOR_INTVAL_SEC;
 					alarm_start_range(
 						&chip->thermal_monitor_alarm,
 						timespec_to_ktime(ts),
 						timespec_to_ktime(ts));
-#endif
 					last_thermal_level = \
 						chip->thermal_levels - 1;
 				}
@@ -3906,22 +3859,13 @@ qpnp_chg_adjust_vddmax(struct qpnp_chg_chip *chip, int vbat_mv)
 	qpnp_chg_set_appropriate_vddmax(chip);
 }
 
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-#define POWER_STAGE_REDUCE_CHECK_PERIOD_NS      (20LL * NSEC_PER_SEC)
-#else
-#define POWER_STAGE_REDUCE_CHECK_PERIOD_SECONDS		20
-#endif
 static void qpnp_chg_thermal_monitor_work(struct work_struct *work)
 {
 	struct qpnp_chg_chip *chip = container_of(work,
 			struct qpnp_chg_chip, thermal_monitor_work);
 	int usb_present = 0, batt_present = 0;
 	int batt_temp, thermal_level;
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-	ktime_t kt;
-#else
-  	struct timespec ts;
-#endif
+	struct timespec ts;
 
 	usb_present = qpnp_chg_is_usb_chg_plugged_in(chip);
 	batt_present = get_prop_batt_present(chip);
@@ -3955,32 +3899,16 @@ static void qpnp_chg_thermal_monitor_work(struct work_struct *work)
 	if (last_thermal_level != thermal_level)
 		qpnp_batt_system_temp_level_set(chip, thermal_level);
 
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-		kt = ns_to_ktime(POWER_STAGE_REDUCE_CHECK_PERIOD_NS);
-		alarm_start_relative(&chip->reduce_power_stage_alarm, kt);
-#else
 	getnstimeofday(&ts);
 	ts.tv_sec += THERMAL_MONITOR_INTVAL_SEC;
 	alarm_start_range(&chip->thermal_monitor_alarm,
 			timespec_to_ktime(ts), timespec_to_ktime(ts));
-#endif
 
 	last_thermal_level = thermal_level;
 
 	return;
 }
 
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-static enum alarmtimer_restart
-qpnp_chg_thermal_monitor_callback(struct alarm *alarm, ktime_t now)
-{
-	struct qpnp_chg_chip *chip = container_of(alarm, struct qpnp_chg_chip,
-				thermal_monitor_alarm);
-
-	schedule_work(&chip->thermal_monitor_work);
-	return ALARMTIMER_NORESTART;
-}
-#else
 static void qpnp_chg_thermal_monitor_callback(struct alarm *alarm)
 {
 	struct qpnp_chg_chip *chip = container_of(alarm, struct qpnp_chg_chip,
@@ -3988,7 +3916,6 @@ static void qpnp_chg_thermal_monitor_callback(struct alarm *alarm)
 
 	schedule_work(&chip->thermal_monitor_work);
 }
-#endif
 
 #define CONSECUTIVE_COUNT	3
 #define VBATDET_MAX_ERR_MV	50
@@ -4355,11 +4282,7 @@ mutex_unlock:
 	return rc;
 }
 
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-#define POWER_STAGE_REDUCE_CHECK_PERIOD_NS      (20LL * NSEC_PER_SEC)
-#else
 #define POWER_STAGE_REDUCE_CHECK_PERIOD_SECONDS		20
-#endif
 #define POWER_STAGE_REDUCE_MAX_VBAT_UV			3900000
 #define POWER_STAGE_REDUCE_MIN_VCHG_UV			4800000
 #define POWER_STAGE_SEL_MASK				0x0F
@@ -4463,11 +4386,7 @@ int get_vbat_averaged(struct qpnp_chg_chip *chip, int sample_count)
 static void
 qpnp_chg_reduce_power_stage(struct qpnp_chg_chip *chip)
 {
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-	ktime_t kt;
-#else
 	struct timespec ts;
-#endif
 	bool power_stage_reduced_in_hw = qpnp_chg_is_power_stage_reduced(chip);
 	bool reduce_power_stage = false;
 	int vbat_uv = get_vbat_averaged(chip, 16);
@@ -4527,16 +4446,11 @@ qpnp_chg_reduce_power_stage(struct qpnp_chg_chip *chip)
 	}
 
 	if (usb_present && usb_ma_above_wall) {
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-		kt = ns_to_ktime(POWER_STAGE_REDUCE_CHECK_PERIOD_NS);
-		alarm_start_relative(&chip->reduce_power_stage_alarm, kt);
-#else
 		getnstimeofday(&ts);
 		ts.tv_sec += POWER_STAGE_REDUCE_CHECK_PERIOD_SECONDS;
 		alarm_start_range(&chip->reduce_power_stage_alarm,
 					timespec_to_ktime(ts),
 					timespec_to_ktime(ts));
-#endif
 	} else {
 		pr_debug("stopping power stage workaround\n");
 		chip->power_stage_workaround_running = false;
@@ -4571,17 +4485,6 @@ qpnp_chg_reduce_power_stage_work(struct work_struct *work)
 	qpnp_chg_reduce_power_stage(chip);
 }
 
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-static enum alarmtimer_restart
-qpnp_chg_reduce_power_stage_callback(struct alarm *alarm, ktime_t now)
-{
-	struct qpnp_chg_chip *chip = container_of(alarm, struct qpnp_chg_chip,
-						reduce_power_stage_alarm);
-
-	schedule_work(&chip->reduce_power_stage_work);
-	return ALARMTIMER_NORESTART;
-}
-#else
 static void
 qpnp_chg_reduce_power_stage_callback(struct alarm *alarm)
 {
@@ -4590,7 +4493,6 @@ qpnp_chg_reduce_power_stage_callback(struct alarm *alarm)
 
 	schedule_work(&chip->reduce_power_stage_work);
 }
-#endif
 
 static int
 qpnp_dc_power_set_property(struct power_supply *psy,
@@ -5629,13 +5531,8 @@ qpnp_charger_probe(struct spmi_device *spmi)
 
 	mutex_init(&chip->jeita_configure_lock);
 	spin_lock_init(&chip->usbin_health_monitor_lock);
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-	alarm_init(&chip->reduce_power_stage_alarm, ALARM_REALTIME,
-			qpnp_chg_reduce_power_stage_callback);
-#else
 	alarm_init(&chip->reduce_power_stage_alarm, ANDROID_ALARM_RTC_WAKEUP,
 			qpnp_chg_reduce_power_stage_callback);
-#endif
 	INIT_WORK(&chip->reduce_power_stage_work,
 			qpnp_chg_reduce_power_stage_work);
 	mutex_init(&chip->batfet_vreg_lock);
@@ -5645,13 +5542,9 @@ qpnp_charger_probe(struct spmi_device *spmi)
 			qpnp_chg_batfet_lcl_work);
 	INIT_WORK(&chip->insertion_ocv_work,
 			qpnp_chg_insertion_ocv_work);
-#ifdef CONFIG_ANDROID_INTF_ALARM_DEV
-	alarm_init(&chip->thermal_monitor_alarm, ALARM_REALTIME,
-		qpnp_chg_thermal_monitor_callback);
-#else
+
 	alarm_init(&chip->thermal_monitor_alarm, ANDROID_ALARM_RTC_WAKEUP,
 		qpnp_chg_thermal_monitor_callback);
-#endif
 	INIT_WORK(&chip->thermal_monitor_work,
 		qpnp_chg_thermal_monitor_work);
 
