@@ -3871,7 +3871,7 @@ static void qpnp_chg_thermal_monitor_work(struct work_struct *work)
 	else
 		thermal_level = 6;
 
-	pr_info("temp %d lvl %d %d\n",
+	pr_debug("temp %d lvl %d %d\n",
 		batt_temp, last_thermal_level, thermal_level);
 
 	if (last_thermal_level != thermal_level)
